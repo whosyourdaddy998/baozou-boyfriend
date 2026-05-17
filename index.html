@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>暴走男朋友</title>
+    <meta
+      name="description"
+      content="一个部署在 GitHub Pages 上的搞怪可爱互动小游戏，拍打 Q 版男朋友，解锁吐槽和彩蛋。"
+    >
+    <link rel="stylesheet" href="./css/style.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">GitHub Pages Love Project</p>
+          <h1>暴走男朋友</h1>
+          <p class="hero-text">
+            心情不好？来拍两下。心情很好？也可以顺手捏一下。每次互动都会留下今天的“暴走记录”。
+          </p>
+          <div class="hero-stats">
+            <article class="stat-card">
+              <span class="stat-label">总暴走次数</span>
+              <strong id="totalCount">0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">今日状态</span>
+              <strong id="statusLabel">待机观察中</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">已解锁彩蛋</span>
+              <strong id="unlockCount">0 / 3</strong>
+            </article>
+          </div>
+        </div>
+        <div class="hero-badge">
+          <span>本地存档</span>
+          <span>上传照片</span>
+          <span>移动端友好</span>
+        </div>
+      </header>
+
+      <main class="main-grid">
+        <section class="panel stage-panel">
+          <div class="panel-head">
+            <div>
+              <p class="mini-label">互动舞台</p>
+              <h2 id="boyfriendName">今日挨揍担当</h2>
+            </div>
+            <button id="surpriseButton" class="ghost-button" type="button">
+              看看隐藏反应
+            </button>
+          </div>
+
+          <div id="stage" class="stage mood-idle">
+            <div class="sparkles" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+            <div class="speech-wrap">
+              <div id="speechBubble" class="speech-bubble">我先乖乖站好，等女朋友审判。</div>
+            </div>
+
+            <div class="avatar-frame">
+              <div class="avatar-halo"></div>
+              <div id="avatarRoot" class="avatar-root" role="img" aria-label="Q 版男朋友形象">
+                <div class="body-shadow"></div>
+                <div class="avatar-body">
+                  <div class="hair hair-left"></div>
+                  <div class="hair hair-right"></div>
+                  <div class="face">
+                    <div class="blush blush-left"></div>
+                    <div class="blush blush-right"></div>
+                    <div class="brow brow-left"></div>
+                    <div class="brow brow-right"></div>
+                    <div class="eye eye-left"></div>
+                    <div class="eye eye-right"></div>
+                    <div class="mouth"></div>
+                  </div>
+                  <div class="arm arm-left"></div>
+                  <div class="arm arm-right"></div>
+                  <div class="torso"></div>
+                </div>
+                <img id="photoOverlay" class="photo-overlay hidden" alt="自定义男朋友头像">
+              </div>
+            </div>
+
+            <div class="stage-footer">
+              <div class="meter-block">
+                <span>求生值</span>
+                <div class="meter-track">
+                  <div id="survivalMeter" class="meter-fill"></div>
+                </div>
+              </div>
+              <div class="stage-meta">
+                <span id="moodTag" class="mood-tag">待机</span>
+                <span id="lastActionLabel">还没开始挨打</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="panel-head">
+            <div>
+              <p class="mini-label">整蛊道具</p>
+              <h2>今天怎么收拾他</h2>
+            </div>
+          </div>
+          <div id="actionButtons" class="action-grid"></div>
+          <div class="tips-card">
+            <strong>玩法提示</strong>
+            <p>
+              连续互动会触发新反应。第 10 次会解锁新表情，第 30 次会解锁隐藏吐槽，第 50 次会触发特殊结局。
+            </p>
+          </div>
+        </section>
+
+        <section class="panel progress-panel">
+          <div class="panel-head">
+            <div>
+              <p class="mini-label">战况记录</p>
+              <h2>今日恋爱执法榜</h2>
+            </div>
+          </div>
+          <div class="progress-list">
+            <article class="progress-card">
+              <span>当前连击</span>
+              <strong id="comboCount">0</strong>
+            </article>
+            <article class="progress-card">
+              <span>最常用招式</span>
+              <strong id="favoriteAction">还没动手</strong>
+            </article>
+            <article class="progress-card">
+              <span>下个彩蛋</span>
+              <strong id="nextUnlock">第 10 次解锁委屈脸</strong>
+            </article>
+          </div>
+          <div id="milestoneList" class="milestone-list"></div>
+        </section>
+
+        <section class="panel settings-panel">
+          <div class="panel-head">
+            <div>
+              <p class="mini-label">自定义设置</p>
+              <h2>让他更像本人</h2>
+            </div>
+          </div>
+          <label class="field">
+            <span>男朋友称呼</span>
+            <input id="nameInput" type="text" maxlength="16" placeholder="比如：小王、狗男人、宝宝">
+          </label>
+          <label class="upload-card" for="photoInput">
+            <span>上传照片贴脸</span>
+            <small>只保存在当前浏览器，不会上传到任何地方。</small>
+          </label>
+          <input id="photoInput" type="file" accept="image/*" hidden>
+          <div class="settings-actions">
+            <button id="removePhotoButton" class="ghost-button" type="button">移除照片</button>
+            <details class="danger-zone">
+              <summary>高级设置</summary>
+              <button id="resetButton" class="danger-button" type="button">重置全部进度</button>
+            </details>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <dialog id="endingDialog" class="ending-dialog">
+      <div class="dialog-card">
+        <p class="mini-label">隐藏结局已触发</p>
+        <h2>今日求生失败</h2>
+        <p id="endingMessage">
+          暴走次数突破 50，男朋友已申请抱头认错，并请求今晚允许通过亲亲赎罪。
+        </p>
+        <button id="closeDialogButton" class="primary-button" type="button">勉强放过他</button>
+      </div>
+    </dialog>
+
+    <script src="./js/app.js"></script>
+  </body>
+</html>
