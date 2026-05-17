@@ -1,3 +1,4 @@
 @echo off
 cd /d %~dp0
-python server.py
+call npm install
+call npm run dev -- --host
