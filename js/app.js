@@ -1,12 +1,13 @@
 (function () {
-  var STORAGE_KEY = "rage-boyfriend-mobile-v3";
-  var LEGACY_STORAGE_KEY = "rage-boyfriend-mobile-v2";
+  var STORAGE_KEY = "rage-boyfriend-mobile-v4";
+  var LEGACY_KEYS = ["rage-boyfriend-mobile-v3", "rage-boyfriend-mobile-v2"];
   var DEFAULT_MODE = "rage";
   var DEFAULT_DRAWER_TAB = "interact";
-  var ENDING_THRESHOLD = 50;
   var AREA_SPAM_WINDOW_MS = 3000;
   var AREA_SPAM_LIMIT = 5;
   var AREA_LOCK_MS = 4000;
+  var LOW_SURVIVAL_THRESHOLD = 30;
+  var MAX_EFFECTIVE_ITEM_USES = 3;
 
   var itemCatalog = [
     {
@@ -18,13 +19,15 @@
       unlocked: true,
       usableModes: ["rage"],
       affectionChange: -1,
-      moodChange: "annoyed",
+      survivalImpact: -1,
+      affectionChance: 0,
+      fatigueMultiplier: 0.8,
       useText: "一拳下去，先把气势做足。",
       rageTitle: "小拳拳制裁",
       rageLines: [
-        "你这一拳不重，但威慑力很足。",
-        "我怀疑你打开网页就是为了合法收拾我。",
-        "这个出手动作，一看就练过。"
+        "这一拳像警告，不像真正的伤害。",
+        "你这一手，看得出来是来立规矩的。",
+        "我已经在想怎么更快认错了。"
       ]
     },
     {
@@ -35,15 +38,17 @@
       cost: 0,
       unlocked: true,
       usableModes: ["care"],
-      affectionChange: 2,
-      moodChange: "happy",
-      heartReward: 2,
+      affectionChange: 1,
+      survivalImpact: 2,
+      heartReward: 1,
+      affectionChance: 0.35,
+      fatigueMultiplier: 0.9,
       useText: "抚摸一下，先把气氛哄软。",
       careTitle: "摸头安抚",
       careLines: [
-        "你一摸头，我就自动切换乖巧模式。",
-        "就让你摸这一下，再多我可要脸红了。",
-        "这个动作很有用，我决定稍微听话一点。"
+        "你一摸头，我就有点不想继续跟你嘴硬。",
+        "这样轻轻摸，我很难不心软。",
+        "好吧，这一下确实把我哄到了。"
       ]
     },
     {
@@ -51,277 +56,298 @@
       label: "奶茶",
       icon: "🧋",
       type: "gift",
-      cost: 10,
+      cost: 16,
       usableModes: ["care"],
-      affectionChange: 3,
-      moodChange: "happy",
-      heartReward: 0,
+      affectionChange: 2,
+      survivalImpact: 1,
+      affectionChance: 0.5,
+      fatigueMultiplier: 1,
       useText: "你怎么知道我现在正想喝这个？",
       careTitle: "递上奶茶",
       careLines: [
         "好吧，这杯奶茶确实很会哄人。",
-        "你突然这么贴心，我都有点不习惯了。",
-        "这一口下去，我决定少跟你计较一点。"
+        "这个选择有点过于精准，我被拿捏到了。",
+        "行，这一杯算你立功。"
       ],
-      summary: "补给型礼物，主打回血和哄人。"
+      summary: "补给型礼物，主打安抚和哄人。"
     },
     {
       id: "flower",
       label: "鲜花",
       icon: "💐",
       type: "gift",
-      cost: 18,
+      cost: 28,
       usableModes: ["care"],
-      affectionChange: 5,
-      moodChange: "shy",
-      heartReward: 0,
+      affectionChange: 3,
+      survivalImpact: 2,
+      affectionChance: 0.7,
+      fatigueMultiplier: 1,
       useText: "突然送花真的很犯规。",
       careTitle: "送上一束花",
       careLines: [
         "你这样我真的会不好意思。",
-        "花收下了，但你别以为这样就能全免处罚。",
-        "行吧，这次被你拿捏到了。"
+        "花是收下了，但我还得装一下矜持。",
+        "你要是继续这样，我会很难继续凶你。"
       ],
-      summary: "高好感礼物，适合快速升温。"
+      summary: "高好感礼物，适合关键时刻升温。"
     },
     {
       id: "snack",
       label: "零食",
       icon: "🍪",
       type: "gift",
-      cost: 14,
+      cost: 22,
       usableModes: ["care"],
-      affectionChange: 2,
-      moodChange: "happy",
+      affectionChange: 1,
       heartReward: 1,
-      useText: "拿零食哄人，虽然老套但有效。",
+      survivalImpact: 1,
+      affectionChance: 0.45,
+      fatigueMultiplier: 0.95,
+      useText: "拿零食哄人，虽然老套但确实有用。",
       careTitle: "投喂零食",
       careLines: [
-        "你是不是早就发现我嘴硬但很好哄。",
-        "这个零食来得正好，我心情立刻好一点。",
-        "边吃边被你哄，感觉也不是不行。"
+        "你是不是发现我嘴硬但很好哄。",
+        "这个小零食来得正是时候。",
+        "边吃边被你哄，确实有点没出息。"
       ],
-      summary: "小额礼物，稳定提升心情。"
+      summary: "小额礼物，适合稳定推进关系。"
     },
     {
       id: "slipper",
       label: "丢拖鞋",
       icon: "🩴",
       type: "tool",
-      cost: 16,
+      cost: 30,
       usableModes: ["rage"],
       affectionChange: -2,
-      moodChange: "angry",
-      useText: "拖鞋是威慑，不是简单的投掷物。",
+      survivalImpact: -2,
+      affectionChance: 0,
+      fatigueMultiplier: 1.1,
+      useText: "拖鞋是威慑，不是普通投掷物。",
       rageTitle: "拖鞋袭击",
       rageLines: [
-        "拖鞋飞来的那一刻，我的人生开始回放。",
-        "这一丢很有气势，我根本不敢躲。",
-        "拖鞋也能丢出压迫感，真有你的。"
+        "拖鞋飞来的那一瞬间，我已经想好检讨词了。",
+        "这一丢很有压迫感，我根本不敢躲。",
+        "这下不仅丢脸，拖鞋也丢过来了。"
       ],
-      summary: "高能整活道具，节目效果很强。"
+      summary: "高能整蛊道具，节目效果很强。"
     },
     {
       id: "pillow",
       label: "抱枕",
       icon: "🛋️",
       type: "weapon",
-      cost: 28,
+      cost: 42,
       usableModes: ["rage", "care"],
       affectionChange: 1,
-      moodChange: "speechless",
+      survivalImpact: 0,
+      affectionChance: 0.4,
+      fatigueMultiplier: 0.95,
       useText: "软绵绵的攻击，打完还能顺手抱一下。",
       rageTitle: "抱枕暴击",
       careTitle: "抱枕贴贴",
       rageLines: [
         "被抱枕砸了也不亏，至少闻起来香香的。",
-        "你这是整蛊里带一点温柔，让我没法纯生气。",
-        "抱枕飞过来的瞬间，我甚至有点期待。"
+        "这种武器太狡猾了，根本没法纯生气。",
+        "你这一下像惩罚，也像撒娇。"
       ],
       careLines: [
-        "这个抱枕看起来像是给我台阶下。",
-        "如果打完还能抱一下，那就算你会哄。",
-        "这样贴过来，我连生气都不太有底气了。"
+        "这个抱枕像是给我一个台阶下。",
+        "如果打完还能抱一下，那我就不计较了。",
+        "这种贴贴式互动，对我杀伤力很高。"
       ],
-      summary: "兼容两种模式的混合型道具。"
+      summary: "混合型道具，两种模式都能触发反馈。"
     },
     {
       id: "hammer",
       label: "小锤子",
       icon: "🔨",
       type: "weapon",
-      cost: 36,
+      cost: 58,
       usableModes: ["rage"],
-      affectionChange: -3,
-      moodChange: "angry",
+      affectionChange: -2,
+      survivalImpact: -3,
+      affectionChance: 0,
+      fatigueMultiplier: 1.15,
       useText: "视觉威慑极强的整蛊武器。",
       rageTitle: "小锤警告",
       rageLines: [
         "这个小锤子看着可爱，敲下来一点都不可爱。",
         "你举锤的姿势，像在执行恋爱天条。",
-        "我已经准备好在下一秒认错了。"
+        "看到这个我就知道今天不能再硬撑了。"
       ],
-      summary: "高级武器，适合暴揍模式后期使用。"
+      summary: "高级武器，后期暴揍模式才适合用。"
     }
   ];
 
   var bodyAreas = {
     head: {
       name: "头部",
-      expression: "happy",
+      animationKey: "head",
+      effectType: "heart",
       punishable: false,
-      punishExpression: "angry",
-      punishTexts: [
-        "头发都要被你揉乱了，先停一下。",
-        "摸归摸，别把我当宠物。",
-        "我知道你喜欢这个位置，但也别太频繁。"
-      ],
+      responseTiming: { expression: 150, speech: 300, numbers: 600, reset: 1200 },
+      lowAffectionBehavior: "speechless",
+      highAffectionBehavior: "happy",
       modes: {
         rage: {
-          affectionChange: 0,
-          heartChange: 0,
+          baseAffection: 0,
+          heartReward: 0,
           expression: "speechless",
           mood: "annoyed",
+          survivalImpact: -1,
           texts: [
             "别总敲我头，我会怀疑你在记仇。",
-            "头顶属于警告区，打一下就够了吧。",
-            "这一下更多是羞辱，不是伤害。"
+            "头顶属于警告区，这一下已经够有存在感了。",
+            "你这一下更像是宣告主权，不像真打。"
           ]
         },
         care: {
-          affectionChange: 2,
-          heartChange: 2,
+          baseAffection: 1,
+          heartReward: 1,
           expression: "happy",
           mood: "happy",
+          survivalImpact: 2,
           texts: [
             "别把我当小孩啊……不过这一下还挺舒服。",
             "你一摸头，我就很难继续嘴硬。",
-            "好吧，就让你多摸一下。"
+            "好吧，这个位置确实很容易哄到我。"
           ]
         }
       }
     },
     face: {
       name: "脸部",
-      expression: "shy",
+      animationKey: "face",
+      effectType: "blush",
       punishable: true,
       punishExpression: "angry",
       punishTexts: [
-        "别一直捏脸，我真的会躲开。",
-        "你是不是故意看我脸红。",
-        "这个地方玩太久，我就要翻脸了。"
+        "别一直戳脸，我真的会躲开。",
+        "你是不是故意想看我脸红。",
+        "这个地方不能一直玩，我也会翻脸。"
       ],
+      responseTiming: { expression: 150, speech: 330, numbers: 620, reset: 1200 },
+      lowAffectionBehavior: "speechless",
+      highAffectionBehavior: "shy",
       modes: {
         rage: {
-          affectionChange: -1,
-          heartChange: 0,
+          baseAffection: -1,
+          heartReward: 0,
           expression: "speechless",
           mood: "speechless",
+          survivalImpact: -1,
           texts: [
-            "脸都要给你捏圆了，还不打算停吗。",
-            "你这根本不是制裁，是借机占便宜。",
+            "脸都快给你捏圆了，这还不算收手吗。",
+            "你这根本不是制裁，是借机整我。",
             "再这样下去，我连表情管理都做不到了。"
           ]
         },
         care: {
-          affectionChange: 1,
-          heartChange: 1,
+          baseAffection: 1,
+          heartReward: 1,
           expression: "shy",
           mood: "shy",
+          survivalImpact: 1,
           texts: [
             "你靠太近了，我有点不好意思。",
-            "一直摸脸算什么招式……挺犯规的。",
-            "别看了，我知道自己现在脸有点红。"
+            "一直碰脸这种动作……真的挺犯规。",
+            "别看了，我知道自己现在肯定有点脸红。"
           ]
         }
       }
     },
     hand: {
       name: "手部",
-      expression: "happy",
+      animationKey: "hand",
+      effectType: "spark",
       punishable: false,
-      punishExpression: "speechless",
-      punishTexts: [
-        "手都要被你拉麻了，休息一会吧。",
-        "你今天很黏人欸。",
-        "给你牵可以，但别一直不松手。"
-      ],
+      responseTiming: { expression: 150, speech: 300, numbers: 620, reset: 1200 },
+      lowAffectionBehavior: "speechless",
+      highAffectionBehavior: "happy",
       modes: {
         rage: {
-          affectionChange: 0,
-          heartChange: 0,
+          baseAffection: 0,
+          heartReward: 0,
           expression: "speechless",
           mood: "speechless",
+          survivalImpact: -1,
           texts: [
-            "你这是警告我，还是想让我配合一点？",
-            "手都被你拍麻了，我已经准备认错。",
-            "这个地方打起来，羞耻感比疼更重。"
+            "你这是提醒我收敛一点，还是要我配合一点。",
+            "拍手这一招，羞耻感比疼更明显。",
+            "这一下像命令，不像安慰。"
           ]
         },
         care: {
-          affectionChange: 2,
-          heartChange: 2,
+          baseAffection: 1,
+          heartReward: 1,
           expression: "happy",
           mood: "happy",
+          survivalImpact: 1,
           texts: [
-            "牵手这种动作对好感提升真的很快。",
+            "好吧，手给你，但别一直不松开。",
             "你这样来拉我，我会默认你在示好。",
-            "好吧，手给你，但只许温柔一点。"
+            "牵手类动作，对好感确实挺有效。"
           ]
         }
       }
     },
     shoulder: {
       name: "肩膀",
-      expression: "tired",
+      animationKey: "shoulder",
+      effectType: "calm",
       punishable: false,
-      punishExpression: "speechless",
-      punishTexts: [
-        "肩膀已经被你拍酸了，先缓一缓。",
-        "安慰归安慰，也别一直按同一个地方。",
-        "我知道你在示好，但这也太频繁了。"
-      ],
+      responseTiming: { expression: 180, speech: 320, numbers: 620, reset: 1200 },
+      lowAffectionBehavior: "tired",
+      highAffectionBehavior: "happy",
       modes: {
         rage: {
-          affectionChange: -1,
-          heartChange: 0,
+          baseAffection: -1,
+          heartReward: 0,
           expression: "speechless",
           mood: "annoyed",
+          survivalImpact: -1,
           texts: [
             "肩膀上这一下，很像在催我赶紧认错。",
             "你拍这里的时候，语气都显得更强势了。",
-            "这种动作比直接打还让人压力大。"
+            "这种动作比直接打还让人有压力。"
           ]
         },
         care: {
-          affectionChange: 2,
-          heartChange: 1,
+          baseAffection: 1,
+          heartReward: 1,
           expression: "tired",
           mood: "tired",
+          survivalImpact: 2,
           texts: [
             "你这样拍肩膀，像在安慰我一样。",
-            "这一下有点像按摩，我勉强给高分。",
-            "好吧，肩膀这里确实有被你安抚到。"
+            "这一点像按摩，我可以给高一点分。",
+            "肩膀这里确实有被你安抚到。"
           ]
         }
       }
     },
     sensitive: {
       name: "身体敏感区",
-      expression: "angry",
+      animationKey: "body",
+      effectType: "warn",
       punishable: true,
       punishExpression: "angry",
       punishTexts: [
         "都说了这个地方不可以，再碰就锁区。",
         "你今天是故意试探我底线吗。",
-        "这个地方要立刻禁止继续互动。"
+        "这个位置现在直接禁止继续互动。"
       ],
+      responseTiming: { expression: 120, speech: 280, numbers: 600, reset: 1200 },
+      lowAffectionBehavior: "angry",
+      highAffectionBehavior: "speechless",
       modes: {
         rage: {
-          affectionChange: -3,
-          heartChange: 0,
+          baseAffection: -2,
+          heartReward: 0,
           expression: "angry",
           mood: "angry",
+          survivalImpact: -3,
           texts: [
             "这个地方不可以乱碰。",
             "喂，你注意一点，我真的会生气。",
@@ -329,13 +355,14 @@
           ]
         },
         care: {
-          affectionChange: -2,
-          heartChange: -1,
+          baseAffection: -2,
+          heartReward: -1,
           expression: "angry",
           mood: "angry",
+          survivalImpact: -1,
           texts: [
             "抚摸模式也不代表什么都可以。",
-            "这个位置不能当成开玩笑。",
+            "这个位置不能当成玩笑。",
             "你再这样，我连奶茶都不想收了。"
           ]
         }
@@ -345,35 +372,51 @@
 
   var milestones = [
     {
-      id: "total-10",
-      title: "委屈脸上线",
-      body: "总互动达到 10 次后，他开始更容易露出委屈和无语表情。",
+      id: "unlock-3",
+      title: "第三个内容",
+      body: "总互动达到 20 次后，开始逐步解锁中级内容。",
       check: function (state) {
-        return state.totalCount >= 10;
+        return state.totalCount >= 20;
       }
     },
     {
-      id: "heart-20",
-      title: "会哄人了",
-      body: "累计获得 20 爱心值，说明你已经掌握基本安抚技巧。",
-      check: function (state) {
-        return state.heartEarned >= 20;
-      }
-    },
-    {
-      id: "affection-15",
+      id: "unlock-4",
       title: "关系升温",
-      body: "好感值达到 15，开始具备后续事件和等级扩展空间。",
+      body: "好感值达到 20，说明互动开始有明显效果。",
       check: function (state) {
-        return state.affection >= 15;
+        return state.affection >= 20;
       }
     },
     {
-      id: "ending-50",
-      title: "今日求生失败",
-      body: "总互动达到 50 次后，男朋友会触发抱头认错结局。",
+      id: "unlock-5",
+      title: "会用道具了",
+      body: "累计有效道具使用 5 次，开始进入更丰富的互动阶段。",
       check: function (state) {
-        return state.totalCount >= ENDING_THRESHOLD;
+        return getTotalEffectiveItemUses(state) >= 5;
+      }
+    },
+    {
+      id: "unlock-6",
+      title: "高阶互动铺开",
+      body: "覆盖 4 个以上区域互动，并保持好感稳定增长。",
+      check: function (state) {
+        return countVisitedAreas(state) >= 4 && state.affection >= 30;
+      }
+    },
+    {
+      id: "unlock-7",
+      title: "接近亲密",
+      body: "好感值达到 60，后续可接更高级内容。",
+      check: function (state) {
+        return state.affection >= 60;
+      }
+    },
+    {
+      id: "hidden-ending-ready",
+      title: "隐藏结局条件接近完成",
+      body: "达到高门槛组合条件后，才允许进入隐藏结局范围。",
+      check: function (state) {
+        return canReachHiddenEnding(state);
       }
     }
   ];
@@ -388,6 +431,7 @@
     heartBalance: 0,
     heartEarned: 0,
     affection: 0,
+    survivalValue: 100,
     mood: "neutral",
     currentExpression: "normal",
     rageTapCount: 0,
@@ -397,16 +441,25 @@
     lastTouchedArea: "",
     areaClickCounts: {},
     areaLockUntil: {},
+    areaRewardDecay: {},
+    areaVisitFlags: {},
+    modeStreak: { rage: 0, care: 0 },
     unlockedMilestones: [],
     unlockedEvents: [],
+    softEventFlags: [],
     inventory: buildDefaultInventory(),
     itemUsage: {},
+    itemEffectiveUsage: {},
     debugHotspots: false,
-    endingSeen: false
+    endingSeen: false,
+    failEndingSeen: false,
+    protectionTriggered: false,
+    idleStateSeed: Math.floor(Math.random() * 1000)
   };
 
   var state = loadState();
   var toastTimer = null;
+  var feedbackCycleToken = 0;
 
   var nodes = {
     drawerToggle: document.getElementById("drawerToggle"),
@@ -420,12 +473,19 @@
     boyfriendName: document.getElementById("boyfriendName"),
     equippedItemLabel: document.getElementById("equippedItemLabel"),
     avatarRoot: document.getElementById("avatarRoot"),
+    headLayer: document.getElementById("headLayer"),
+    faceLayer: document.getElementById("faceLayer"),
+    bodyLayer: document.getElementById("bodyLayer"),
+    handLayer: document.getElementById("handLayer"),
     hotspotLayer: document.getElementById("hotspotLayer"),
     floatingFeedback: document.getElementById("floatingFeedback"),
+    effectLayer: document.getElementById("effectLayer"),
     statusLabel: document.getElementById("statusLabel"),
     lastAreaLabel: document.getElementById("lastAreaLabel"),
     modeDescription: document.getElementById("modeDescription"),
     expressionLabel: document.getElementById("expressionLabel"),
+    protectionLabel: document.getElementById("protectionLabel"),
+    streakLabel: document.getElementById("streakLabel"),
     survivalLabel: document.getElementById("survivalLabel"),
     survivalMeter: document.getElementById("survivalMeter"),
     bottomDrawer: document.getElementById("bottomDrawer"),
@@ -513,15 +573,21 @@
       return;
     }
     state.currentMode = mode;
+    state.modeStreak[mode] = 0;
     ensureCompatibleEquip();
     state.lastSpeech = mode === "rage"
-      ? "已切到暴揍模式。点不同位置会出现更强烈的反应。"
-      : "已切到抚摸模式。现在更适合赚爱心值和拉好感。";
-    state.currentExpression = mode === "rage" ? "speechless" : "happy";
-    state.mood = mode === "rage" ? "annoyed" : "happy";
+      ? "已切到暴揍模式。现在互动更偏整蛊和压迫感。"
+      : "已切到抚摸模式。现在主要赚爱心值并慢慢拉高好感。";
+    queueFeedback({
+      expression: mode === "rage" ? "speechless" : "happy",
+      mood: mode === "rage" ? "annoyed" : "happy",
+      speech: state.lastSpeech,
+      animation: mode === "rage" ? "tap-boost" : "tap-care",
+      areaKey: "head",
+      floating: []
+    });
     saveState();
     renderAll();
-    animateAvatar(mode === "rage" ? "spark" : "comforted");
     showToast(mode === "rage" ? "已切到暴揍模式。" : "已切到抚摸模式。");
   }
 
@@ -549,32 +615,48 @@
     var now = Date.now();
     var modeConfig = area.modes[state.currentMode];
     var equipped = getEquippedItem();
-    var effects = [];
+    var floating = [];
+    var payload;
+    var punishTriggered = false;
 
     if (!area) {
       return;
     }
 
     if (isAreaLocked(areaId, now)) {
-      state.currentExpression = "angry";
-      state.mood = "angry";
-      state.lastTouchedArea = areaId;
-      state.lastSpeech = "这个区域刚被你惹毛了，先冷静几秒再碰。";
-      saveState();
-      renderAll();
-      animateAvatar("annoyed");
-      effects.push({ text: "锁定中", type: "bad" });
-      renderFloatingFeedback(effects);
+      queueFeedback({
+        expression: "angry",
+        mood: "protected",
+        speech: "这个区域刚被你惹毛了，先冷静几秒再碰。",
+        animation: "tap-protect",
+        areaKey: area.animationKey,
+        effectType: "warn",
+        floating: [{ text: "锁定中", type: "bad" }]
+      });
       showToast("他现在不让你碰这里。");
       return;
     }
 
-    registerAreaClick(areaId, now);
     state.totalCount += 1;
     state.lastTouchedArea = areaId;
-    state.lastSpeech = pickLine(modeConfig.texts);
-    state.currentExpression = modeConfig.expression;
-    state.mood = modeConfig.mood;
+    state.areaVisitFlags[areaId] = true;
+    updateModeStreak();
+    registerAreaClick(areaId, now);
+
+    var baseAffection = resolveAreaAffection(areaId, modeConfig);
+    var baseHeart = resolveAreaHeart(areaId, modeConfig);
+    var survivalDelta = resolveSurvivalDelta(areaId, modeConfig);
+    var itemEffects = applyEquippedItemEffect(equipped, floating);
+
+    if (baseAffection !== 0) {
+      applyStatDelta("affection", baseAffection, floating, "好感");
+    }
+    if (baseHeart !== 0) {
+      applyHeartGain(baseHeart, floating);
+    }
+    if (survivalDelta !== 0) {
+      applySurvivalDelta(survivalDelta, floating);
+    }
 
     if (state.currentMode === "rage") {
       state.rageTapCount += 1;
@@ -582,30 +664,33 @@
       state.careTapCount += 1;
     }
 
-    applyStatDelta("affection", modeConfig.affectionChange, effects, "好感");
-    applyStatDelta("heartBalance", modeConfig.heartChange, effects, "爱心");
-    if (modeConfig.heartChange > 0) {
-      state.heartEarned += modeConfig.heartChange;
-    }
-
-    var itemApplied = applyEquippedItemEffect(equipped, effects);
     incrementItemUsage(equipped.id);
+    if (itemEffects.effectiveUse) {
+      incrementEffectiveItemUsage(equipped.id);
+    }
 
     if (area.punishable && isAreaSpamTriggered(areaId)) {
-      triggerAreaPunish(areaId, area, effects);
+      triggerAreaPunish(areaId, area, floating);
+      punishTriggered = true;
     }
 
+    refreshProtectionState();
     unlockMilestonesIfNeeded();
+    checkEndingStates();
 
-    if (state.totalCount >= ENDING_THRESHOLD && !state.endingSeen) {
-      state.endingSeen = true;
-      openEndingDialog();
-    }
+    payload = {
+      expression: punishTriggered ? area.punishExpression || "angry" : resolveExpression(area, modeConfig),
+      mood: punishTriggered ? "angry" : resolveMood(area, modeConfig),
+      speech: punishTriggered ? pickLine(area.punishTexts) : buildSpeech(area, modeConfig, itemEffects),
+      animation: resolveAnimation(area.animationKey, punishTriggered),
+      areaKey: area.animationKey,
+      effectType: punishTriggered ? "warn" : area.effectType,
+      floating: floating
+    };
 
     saveState();
     renderAll();
-    animateAvatar(resolveAnimation(itemApplied));
-    renderFloatingFeedback(effects);
+    queueFeedback(payload);
   }
 
   function renderAll() {
@@ -631,8 +716,8 @@
     nodes.careModeButton.classList.toggle("is-active", !rageActive);
     nodes.activeModeTag.textContent = rageActive ? "暴揍模式" : "抚摸模式";
     nodes.modeDescription.textContent = rageActive
-      ? "暴揍模式更适合整蛊和武器类道具，会让他更快出现无语或生气反应。"
-      : "抚摸模式主要赚爱心值，并通过温柔互动慢慢提升好感。";
+      ? "暴揍模式更适合整蛊和武器，但求生值掉得更快。"
+      : "抚摸模式主要赚爱心值，并在安全区慢慢提升好感。";
     nodes.heartBalance.textContent = String(state.heartBalance);
     nodes.affectionValue.textContent = String(state.affection);
     nodes.unlockCount.textContent = countUnlockedItems(state) + " / " + itemCatalog.length;
@@ -640,17 +725,16 @@
   }
 
   function renderStage() {
-    var survivalPercent = Math.max(4, 100 - Math.min(state.rageTapCount * 3 + state.totalCount, 96));
-    var expressionClass = "expression-" + state.currentExpression;
-    var moodClass = "mood-" + state.mood;
-    nodes.stage.className = "character-stage " + expressionClass + " " + moodClass;
+    nodes.stage.className = "character-stage expression-" + state.currentExpression + " mood-" + state.mood;
     nodes.speechBubble.textContent = state.lastSpeech;
     nodes.equippedItemLabel.textContent = getEquippedItem().icon + " " + getEquippedItem().label;
     nodes.statusLabel.textContent = buildStatusLabel();
     nodes.lastAreaLabel.textContent = state.lastTouchedArea ? bodyAreas[state.lastTouchedArea].name : "还没开始互动";
     nodes.expressionLabel.textContent = getExpressionLabel(state.currentExpression);
-    nodes.survivalLabel.textContent = survivalPercent + "%";
-    nodes.survivalMeter.style.width = survivalPercent + "%";
+    nodes.protectionLabel.textContent = state.protectionTriggered ? "已触发" : "未触发";
+    nodes.streakLabel.textContent = buildStreakLabel();
+    nodes.survivalLabel.textContent = state.survivalValue + "%";
+    nodes.survivalMeter.style.width = state.survivalValue + "%";
   }
 
   function renderDrawerState() {
@@ -684,7 +768,7 @@
         '<button class="item-button' + (equipped ? " is-equipped" : "") + (unlocked ? "" : " is-locked") + '" type="button" data-item-id="' + escapeHtml(item.id) + '"' + (unlocked ? "" : " disabled") + ">",
         "<strong>" + escapeHtml(item.icon + " " + item.label) + "</strong>",
         '<span>' + escapeHtml(item.type === "weapon" ? "武器" : item.type === "gift" ? "礼物" : "基础动作") + " · " + escapeHtml(buildItemSummary(item)) + "</span>",
-        '<span>' + escapeHtml(unlocked ? (usable ? "点击装备，可叠加到身体互动上" : "当前模式下效果较弱，建议切换模式") : "未解锁，请先去商店兑换") + "</span>",
+        '<span>' + escapeHtml(unlocked ? (usable ? "点击装备，可叠加到身体互动反馈里" : "当前模式下收益较弱，建议切换模式") : "未解锁，请先去商店兑换") + "</span>",
         '<span>' + escapeHtml(equipped ? "当前已装备" : "点击装备") + "</span>",
         "</button>"
       ].join("");
@@ -763,7 +847,7 @@
       return;
     }
     state.equippedItemId = itemId;
-    state.lastSpeech = "已装备 " + findItem(itemId).label + "。现在点不同位置会叠加它的反馈。";
+    state.lastSpeech = "已装备 " + findItem(itemId).label + "。现在它会参与不同部位的互动反馈。";
     saveState();
     renderAll();
     showToast("已装备 " + findItem(itemId).label);
@@ -781,47 +865,290 @@
     state.heartBalance -= item.cost;
     state.inventory[itemId] = true;
     state.equippedItemId = itemId;
-    state.lastSpeech = "商店已解锁 " + item.label + "，现在它会加入互动反馈。";
+    state.lastSpeech = "商店已解锁 " + item.label + "。现在互动会更丰富，但推进也不会太快。";
     unlockMilestonesIfNeeded();
     saveState();
     renderAll();
     showToast("已解锁 " + item.label);
   }
 
-  function applyEquippedItemEffect(item, effects) {
+  function queueFeedback(payload) {
+    var token = ++feedbackCycleToken;
+    var timing = resolveTiming(payload.areaKey);
+
+    applyBaseAnimation(payload);
+
+    window.setTimeout(function () {
+      if (feedbackCycleToken !== token) {
+        return;
+      }
+      state.currentExpression = payload.expression;
+      state.mood = payload.mood;
+      saveState();
+      renderStage();
+    }, timing.expression);
+
+    window.setTimeout(function () {
+      if (feedbackCycleToken !== token) {
+        return;
+      }
+      state.lastSpeech = payload.speech;
+      saveState();
+      renderStage();
+      spawnEffect(payload.effectType);
+    }, timing.speech);
+
+    window.setTimeout(function () {
+      if (feedbackCycleToken !== token) {
+        return;
+      }
+      renderFloatingFeedback(payload.floating);
+    }, timing.numbers);
+
+    window.setTimeout(function () {
+      if (feedbackCycleToken !== token) {
+        return;
+      }
+      clearAnimationClasses();
+      nodes.avatarRoot.classList.remove("is-acting");
+    }, timing.reset);
+  }
+
+  function applyBaseAnimation(payload) {
+    clearAnimationClasses();
+    nodes.avatarRoot.classList.add("is-acting");
+    if (payload.animation) {
+      nodes.avatarRoot.classList.add(payload.animation);
+    }
+    if (payload.areaKey === "head" || payload.areaKey === "shoulder") {
+      nodes.headLayer.classList.add(payload.areaKey === "head" ? "tap-head" : "tap-shoulder");
+    }
+    if (payload.areaKey === "face") {
+      nodes.faceLayer.classList.add("tap-face");
+    }
+    if (payload.areaKey === "body") {
+      nodes.bodyLayer.classList.add("tap-body");
+    }
+    if (payload.areaKey === "hand") {
+      nodes.handLayer.classList.add("tap-hand");
+    }
+  }
+
+  function clearAnimationClasses() {
+    nodes.avatarRoot.classList.remove("tap-rage", "tap-care", "tap-protect", "tap-boost");
+    nodes.headLayer.classList.remove("tap-head", "tap-shoulder");
+    nodes.faceLayer.classList.remove("tap-face");
+    nodes.bodyLayer.classList.remove("tap-body");
+    nodes.handLayer.classList.remove("tap-hand");
+  }
+
+  function spawnEffect(type) {
+    var symbolMap = {
+      heart: "♥",
+      blush: "✦",
+      spark: "✧",
+      calm: "…",
+      warn: "!"
+    };
+    var node = document.createElement("span");
+    node.className = "effect-puff";
+    node.textContent = symbolMap[type] || "✦";
+    nodes.effectLayer.innerHTML = "";
+    nodes.effectLayer.appendChild(node);
+    window.setTimeout(function () {
+      if (node.parentNode) {
+        node.parentNode.removeChild(node);
+      }
+    }, 800);
+  }
+
+  function resolveTiming(areaKey) {
+    var area = Object.keys(bodyAreas).find(function (id) {
+      return bodyAreas[id].animationKey === areaKey;
+    });
+    if (!area) {
+      return { expression: 150, speech: 300, numbers: 600, reset: 1200 };
+    }
+    return bodyAreas[area].responseTiming;
+  }
+
+  function buildSpeech(area, modeConfig, itemEffects) {
+    if (itemEffects && itemEffects.overrideSpeech) {
+      return itemEffects.overrideSpeech;
+    }
+    return pickLine(modeConfig.texts);
+  }
+
+  function resolveExpression(area, modeConfig) {
+    if (state.affection >= 50 && area.highAffectionBehavior) {
+      return area.highAffectionBehavior;
+    }
+    if (state.affection < 10 && area.lowAffectionBehavior) {
+      return area.lowAffectionBehavior;
+    }
+    return modeConfig.expression;
+  }
+
+  function resolveMood(area, modeConfig) {
+    if (state.protectionTriggered && state.currentMode === "rage") {
+      return "protected";
+    }
+    return modeConfig.mood;
+  }
+
+  function resolveAnimation(areaAnimationKey, punishTriggered) {
+    if (punishTriggered || state.protectionTriggered && state.currentMode === "rage") {
+      return "tap-protect";
+    }
+    if (state.currentMode === "care") {
+      return "tap-care";
+    }
+    if (areaAnimationKey === "body" || getEquippedItem().type === "weapon") {
+      return "tap-boost";
+    }
+    return "tap-rage";
+  }
+
+  function resolveAreaAffection(areaId, modeConfig) {
+    var base = modeConfig.baseAffection;
+    var decayFactor = getDecayFactor(areaId);
+    var fatigueFactor = getModeFatigueFactor();
+    var protectionFactor = state.protectionTriggered && state.currentMode === "rage" ? 0.5 : 1;
+    var chance = state.currentMode === "care" ? 0.35 : areaId === "sensitive" ? 1 : 0.25;
+
+    if (base > 0 && Math.random() > chance) {
+      return 0;
+    }
+
+    return normalizeSignedDelta(base * decayFactor * fatigueFactor * protectionFactor);
+  }
+
+  function resolveAreaHeart(areaId, modeConfig) {
+    var reward = modeConfig.heartReward || 0;
+    var decayFactor = getDecayFactor(areaId);
+    var fatigueFactor = getModeFatigueFactor();
+    if (state.currentMode !== "care") {
+      return normalizeSignedDelta(reward * 0.25);
+    }
+    return normalizeSignedDelta(reward * decayFactor * fatigueFactor);
+  }
+
+  function resolveSurvivalDelta(areaId, modeConfig) {
+    var base = modeConfig.survivalImpact || 0;
+    var protectionFactor = state.protectionTriggered && state.currentMode === "rage" ? 0.5 : 1;
+    var fatigueFactor = getModeFatigueFactor();
+    if (state.currentMode === "care") {
+      return normalizeSignedDelta(base);
+    }
+    return normalizeSignedDelta(base * protectionFactor * fatigueFactor);
+  }
+
+  function getDecayFactor(areaId) {
+    var current = numberOrZero(state.areaRewardDecay[areaId] || 0);
+    var factor = Math.max(0.35, 1 - current * 0.18);
+    state.areaRewardDecay[areaId] = Math.min(current + 1, 4);
+    return factor;
+  }
+
+  function getModeFatigueFactor() {
+    var streak = state.modeStreak[state.currentMode] || 0;
+    if (streak <= 5) {
+      return 1;
+    }
+    if (streak <= 10) {
+      return 0.82;
+    }
+    state.currentExpression = "tired";
+    state.mood = "tired";
+    return 0.62;
+  }
+
+  function updateModeStreak() {
+    state.modeStreak[state.currentMode] = numberOrZero(state.modeStreak[state.currentMode]) + 1;
+    state.modeStreak[state.currentMode === "rage" ? "care" : "rage"] = 0;
+  }
+
+  function applyEquippedItemEffect(item, floating) {
     var usable = isItemUsableInMode(item, state.currentMode);
+    var result = { effectiveUse: false, overrideSpeech: "" };
+
     if (!item || !usable) {
-      return false;
+      return result;
     }
 
-    if (item.affectionChange) {
-      applyStatDelta("affection", item.affectionChange, effects, "好感");
+    if (hasReachedItemCap(item.id)) {
+      floating.push({ text: "道具疲劳", type: "info" });
+      return result;
     }
 
-    if (item.moodChange) {
-      state.mood = item.moodChange;
+    result.effectiveUse = true;
+
+    if (item.affectionChange && Math.random() <= (item.affectionChance || 0)) {
+      applyStatDelta("affection", normalizeSignedDelta(item.affectionChange), floating, "好感");
     }
 
-    if (state.currentMode === "care" && Number(item.heartReward || 0) > 0) {
-      applyStatDelta("heartBalance", item.heartReward, effects, "爱心");
-      state.heartEarned += item.heartReward;
+    if (item.heartReward) {
+      applyHeartGain(normalizeSignedDelta(item.heartReward), floating);
+    }
+
+    if (item.survivalImpact) {
+      applySurvivalDelta(normalizeSignedDelta(item.survivalImpact), floating);
     }
 
     if (item.useText) {
-      state.lastSpeech = item.useText + " " + pickLine(getLinesByMode(item));
+      result.overrideSpeech = item.useText + " " + pickLine(getLinesByMode(item));
     }
 
-    return true;
+    return result;
   }
 
-  function triggerAreaPunish(areaId, area, effects) {
+  function hasReachedItemCap(itemId) {
+    return numberOrZero(state.itemEffectiveUsage[itemId] || 0) >= MAX_EFFECTIVE_ITEM_USES;
+  }
+
+  function applyStatDelta(key, delta, floating, label) {
+    if (!delta) {
+      return;
+    }
+    state[key] = Math.max(0, numberOrZero(state[key]) + delta);
+    floating.push({
+      text: label + " " + (delta > 0 ? "+" + delta : String(delta)),
+      type: delta > 0 ? "good" : "bad"
+    });
+  }
+
+  function applyHeartGain(delta, floating) {
+    if (!delta) {
+      return;
+    }
+    state.heartBalance = Math.max(0, numberOrZero(state.heartBalance) + delta);
+    if (delta > 0) {
+      state.heartEarned += delta;
+    }
+    floating.push({
+      text: "爱心 " + (delta > 0 ? "+" + delta : String(delta)),
+      type: delta > 0 ? "good" : "bad"
+    });
+  }
+
+  function applySurvivalDelta(delta, floating) {
+    if (!delta) {
+      return;
+    }
+    state.survivalValue = clamp(numberOrZero(state.survivalValue) + delta, 0, 100);
+    floating.push({
+      text: "求生 " + (delta > 0 ? "+" + delta : String(delta)),
+      type: delta > 0 ? "good" : "bad"
+    });
+  }
+
+  function triggerAreaPunish(areaId, area, floating) {
     state.areaLockUntil[areaId] = Date.now() + AREA_LOCK_MS;
     state.currentExpression = area.punishExpression || "angry";
     state.mood = "angry";
-    state.lastSpeech = pickLine(area.punishTexts);
-    applyStatDelta("affection", -3, effects, "好感");
-    effects.push({ text: "区域锁定", type: "bad" });
-    showToast(area.name + " 已暂时锁定。");
+    applyStatDelta("affection", -2, floating, "好感");
+    applySurvivalDelta(-1, floating);
+    floating.push({ text: "区域锁定", type: "bad" });
   }
 
   function registerAreaClick(areaId, now) {
@@ -839,18 +1166,47 @@
   }
 
   function isAreaLocked(areaId, now) {
-    return Number(state.areaLockUntil[areaId] || 0) > now;
+    return numberOrZero(state.areaLockUntil[areaId] || 0) > now;
   }
 
-  function applyStatDelta(key, delta, effects, label) {
-    if (!delta) {
+  function refreshProtectionState() {
+    state.protectionTriggered = state.survivalValue <= LOW_SURVIVAL_THRESHOLD;
+    if (state.protectionTriggered && state.currentMode === "rage") {
+      state.mood = "protected";
+      state.lastSpeech = "他已经快扛不住了，系统建议切回抚摸模式。";
+    }
+  }
+
+  function unlockMilestonesIfNeeded() {
+    milestones.forEach(function (item) {
+      if (item.check(state) && state.unlockedMilestones.indexOf(item.id) === -1) {
+        state.unlockedMilestones.push(item.id);
+        showToast("达成阶段：" + item.title);
+      }
+    });
+  }
+
+  function checkEndingStates() {
+    if (canReachHiddenEnding(state) && !state.endingSeen) {
+      state.endingSeen = true;
+      nodes.endingMessage.textContent =
+        (state.customName || "男朋友") +
+        " 终于撑到了隐藏结局门槛，这次不是失败，而是被你玩明白了。";
+      if (typeof nodes.endingDialog.showModal === "function") {
+        nodes.endingDialog.showModal();
+      }
       return;
     }
-    state[key] = Math.max(0, numberOrZero(state[key]) + delta);
-    effects.push({
-      text: label + " " + (delta > 0 ? "+" + delta : String(delta)),
-      type: delta > 0 ? "good" : "bad"
-    });
+
+    if (state.survivalValue <= 0 && !state.failEndingSeen) {
+      state.failEndingSeen = true;
+      nodes.endingMessage.textContent =
+        (state.customName || "男朋友") +
+        " 今日求生值已经归零，系统判定为普通失败结局。";
+      if (typeof nodes.endingDialog.showModal === "function") {
+        nodes.endingDialog.showModal();
+      }
+    }
   }
 
   function renderFloatingFeedback(entries) {
@@ -859,23 +1215,17 @@
       var node = document.createElement("span");
       node.className = "floating-tag " + (entry.type || "info");
       node.style.top = 40 + index * 8 + "%";
+      if (index > 0) {
+        node.classList.add("delayed");
+      }
       node.textContent = entry.text;
       nodes.floatingFeedback.appendChild(node);
       window.setTimeout(function () {
         if (node.parentNode) {
           node.parentNode.removeChild(node);
         }
-      }, 1200);
+      }, 1600);
     });
-  }
-
-  function openEndingDialog() {
-    nodes.endingMessage.textContent =
-      (state.customName || "男朋友") +
-      " 今日求生值已经归零。建议你先切回抚摸模式，给他一点补偿。";
-    if (typeof nodes.endingDialog.showModal === "function") {
-      nodes.endingDialog.showModal();
-    }
   }
 
   function handlePhotoUpload(event) {
@@ -926,31 +1276,6 @@
     showToast("已重置全部进度。");
   }
 
-  function unlockMilestonesIfNeeded() {
-    milestones.forEach(function (item) {
-      if (item.check(state) && state.unlockedMilestones.indexOf(item.id) === -1) {
-        state.unlockedMilestones.push(item.id);
-        showToast("达成彩蛋：" + item.title);
-      }
-    });
-  }
-
-  function animateAvatar(kind) {
-    nodes.avatarRoot.classList.remove("hit", "comforted", "spark", "annoyed");
-    nodes.avatarRoot.offsetWidth;
-    nodes.avatarRoot.classList.add(kind);
-  }
-
-  function resolveAnimation(itemApplied) {
-    if (state.currentExpression === "angry") {
-      return "annoyed";
-    }
-    if (state.currentMode === "care") {
-      return "comforted";
-    }
-    return itemApplied ? "spark" : "hit";
-  }
-
   function ensureCompatibleEquip() {
     var current = getEquippedItem();
     if (isItemUsableInMode(current, state.currentMode)) {
@@ -972,8 +1297,15 @@
   }
 
   function buildItemSummary(item) {
-    var prefix = item.summary || item.useText || "";
-    return prefix + (item.usableModes ? " · 适用：" + item.usableModes.join("/") : "");
+    var parts = [];
+    if (item.summary) {
+      parts.push(item.summary);
+    }
+    parts.push("适用：" + item.usableModes.join("/"));
+    if (item.survivalImpact) {
+      parts.push("求生影响 " + item.survivalImpact);
+    }
+    return parts.join(" · ");
   }
 
   function getLinesByMode(item) {
@@ -1000,21 +1332,28 @@
   }
 
   function incrementItemUsage(itemId) {
-    state.itemUsage[itemId] = (state.itemUsage[itemId] || 0) + 1;
+    state.itemUsage[itemId] = numberOrZero(state.itemUsage[itemId]) + 1;
+  }
+
+  function incrementEffectiveItemUsage(itemId) {
+    state.itemEffectiveUsage[itemId] = numberOrZero(state.itemEffectiveUsage[itemId]) + 1;
   }
 
   function buildStatusLabel() {
-    if (state.totalCount >= ENDING_THRESHOLD) {
+    if (state.failEndingSeen) {
       return "今日求生失败";
+    }
+    if (state.endingSeen && canReachHiddenEnding(state)) {
+      return "隐藏结局已触发";
+    }
+    if (state.protectionTriggered) {
+      return "保护状态已启动";
     }
     if (state.mood === "angry") {
       return "明显不爽中";
     }
-    if (state.affection >= 20) {
-      return "关系升温中";
-    }
-    if (state.currentMode === "care") {
-      return "安抚回血中";
+    if (state.affection >= 60) {
+      return "关系明显升温";
     }
     return "待机观察中";
   }
@@ -1023,7 +1362,7 @@
     var pending = milestones.find(function (item) {
       return state.unlockedMilestones.indexOf(item.id) === -1;
     });
-    return pending ? pending.title : "全部彩蛋已解锁";
+    return pending ? pending.title : "高阶条件已接近完成";
   }
 
   function getMoodLabel(mood) {
@@ -1040,6 +1379,8 @@
         return "疲惫";
       case "annoyed":
         return "不耐烦";
+      case "protected":
+        return "自我保护";
       default:
         return "平静";
     }
@@ -1060,6 +1401,36 @@
       default:
         return "普通";
     }
+  }
+
+  function buildStreakLabel() {
+    var rage = numberOrZero(state.modeStreak.rage);
+    var care = numberOrZero(state.modeStreak.care);
+    if (rage === 0 && care === 0) {
+      return "暂无";
+    }
+    return rage > care ? "暴揍连用 " + rage + " 次" : "抚摸连用 " + care + " 次";
+  }
+
+  function getTotalEffectiveItemUses(stateValue) {
+    return Object.keys(stateValue.itemEffectiveUsage || {}).reduce(function (sum, key) {
+      return sum + numberOrZero(stateValue.itemEffectiveUsage[key]);
+    }, 0);
+  }
+
+  function countVisitedAreas(stateValue) {
+    return Object.keys(stateValue.areaVisitFlags || {}).filter(function (key) {
+      return stateValue.areaVisitFlags[key];
+    }).length;
+  }
+
+  function canReachHiddenEnding(stateValue) {
+    return stateValue.affection >= 80
+      && stateValue.totalCount >= 100
+      && countUnlockedItems(stateValue) >= 6
+      && getTotalEffectiveItemUses(stateValue) >= 8
+      && countVisitedAreas(stateValue) >= 5
+      && stateValue.survivalValue > 0;
   }
 
   function findItem(itemId) {
@@ -1091,6 +1462,7 @@
   }
 
   function loadState() {
+    var i;
     var next = null;
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY);
@@ -1105,13 +1477,15 @@
       return next;
     }
 
-    try {
-      var legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (legacyRaw) {
-        return migrateLegacyState(JSON.parse(legacyRaw));
+    for (i = 0; i < LEGACY_KEYS.length; i += 1) {
+      try {
+        var legacyRaw = window.localStorage.getItem(LEGACY_KEYS[i]);
+        if (legacyRaw) {
+          return migrateLegacyState(JSON.parse(legacyRaw));
+        }
+      } catch (legacyError) {
+        continue;
       }
-    } catch (legacyError) {
-      return clone(defaultSave);
     }
 
     return clone(defaultSave);
@@ -1128,21 +1502,20 @@
     next.customName = typeof value.customName === "string" ? value.customName.slice(0, 16) : "";
     next.photoDataUrl = typeof value.photoDataUrl === "string" ? value.photoDataUrl : "";
     next.totalCount = numberOrZero(value.totalCount);
-    next.heartBalance = numberOrZero(value.heartBalance);
-    next.heartEarned = numberOrZero(value.heartEarned);
-    next.affection = Math.max(0, Math.floor(numberOrZero(value.totalCount) / 2));
+    next.heartBalance = Math.max(0, Math.floor(numberOrZero(value.heartBalance) * 0.7));
+    next.heartEarned = Math.max(0, Math.floor(numberOrZero(value.heartEarned) * 0.7));
+    next.affection = Math.max(0, Math.floor(numberOrZero(value.affection || value.totalCount) * 0.45));
+    next.survivalValue = 100;
     next.mood = "neutral";
     next.currentExpression = "normal";
     next.rageTapCount = numberOrZero(value.rageTapCount);
     next.careTapCount = numberOrZero(value.careTapCount);
     next.equippedItemId = findItem(value.equippedItemId) ? value.equippedItemId : "fist";
     next.lastSpeech = typeof value.lastSpeech === "string" ? value.lastSpeech : defaultSave.lastSpeech;
-    next.unlockedMilestones = Array.isArray(value.unlockedMilestones)
-      ? value.unlockedMilestones.filter(isKnownMilestone)
-      : [];
+    next.lastTouchedArea = isKnownArea(value.lastTouchedArea) ? value.lastTouchedArea : "";
     next.inventory = normalizeInventory(value.inventory);
     next.itemUsage = value.itemUsage && typeof value.itemUsage === "object" ? value.itemUsage : {};
-    next.endingSeen = Boolean(value.endingSeen);
+    next.debugHotspots = Boolean(value.debugHotspots);
     return next;
   }
 
@@ -1160,6 +1533,7 @@
     next.heartBalance = numberOrZero(value.heartBalance);
     next.heartEarned = numberOrZero(value.heartEarned);
     next.affection = numberOrZero(value.affection);
+    next.survivalValue = clamp(numberOrZero(value.survivalValue || 100), 0, 100);
     next.mood = typeof value.mood === "string" ? value.mood : "neutral";
     next.currentExpression = typeof value.currentExpression === "string" ? value.currentExpression : "normal";
     next.rageTapCount = numberOrZero(value.rageTapCount);
@@ -1169,14 +1543,24 @@
     next.lastTouchedArea = isKnownArea(value.lastTouchedArea) ? value.lastTouchedArea : "";
     next.areaClickCounts = value.areaClickCounts && typeof value.areaClickCounts === "object" ? value.areaClickCounts : {};
     next.areaLockUntil = value.areaLockUntil && typeof value.areaLockUntil === "object" ? value.areaLockUntil : {};
+    next.areaRewardDecay = value.areaRewardDecay && typeof value.areaRewardDecay === "object" ? value.areaRewardDecay : {};
+    next.areaVisitFlags = value.areaVisitFlags && typeof value.areaVisitFlags === "object" ? value.areaVisitFlags : {};
+    next.modeStreak = value.modeStreak && typeof value.modeStreak === "object"
+      ? { rage: numberOrZero(value.modeStreak.rage), care: numberOrZero(value.modeStreak.care) }
+      : { rage: 0, care: 0 };
     next.unlockedMilestones = Array.isArray(value.unlockedMilestones)
       ? value.unlockedMilestones.filter(isKnownMilestone)
       : [];
     next.unlockedEvents = Array.isArray(value.unlockedEvents) ? value.unlockedEvents : [];
+    next.softEventFlags = Array.isArray(value.softEventFlags) ? value.softEventFlags : [];
     next.inventory = normalizeInventory(value.inventory);
     next.itemUsage = value.itemUsage && typeof value.itemUsage === "object" ? value.itemUsage : {};
+    next.itemEffectiveUsage = value.itemEffectiveUsage && typeof value.itemEffectiveUsage === "object" ? value.itemEffectiveUsage : {};
     next.debugHotspots = Boolean(value.debugHotspots);
     next.endingSeen = Boolean(value.endingSeen);
+    next.failEndingSeen = Boolean(value.failEndingSeen);
+    next.protectionTriggered = Boolean(value.protectionTriggered);
+    next.idleStateSeed = numberOrZero(value.idleStateSeed || Math.floor(Math.random() * 1000));
     return next;
   }
 
@@ -1222,12 +1606,26 @@
     }, 2400);
   }
 
+  function normalizeSignedDelta(value) {
+    if (!value) {
+      return 0;
+    }
+    if (value > 0) {
+      return Math.max(1, Math.round(value));
+    }
+    return Math.min(-1, Math.round(value));
+  }
+
   function pickLine(lines) {
     return lines[Math.floor(Math.random() * lines.length)];
   }
 
   function numberOrZero(value) {
     return Number.isFinite(Number(value)) ? Number(value) : 0;
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
   }
 
   function clone(value) {

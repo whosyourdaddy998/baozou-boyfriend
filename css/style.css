@@ -328,22 +328,55 @@ h2 {
   width: min(70vw, 280px);
   height: min(84vw, 360px);
   transform-origin: center bottom;
+  animation: idle-breathe 3.4s ease-in-out infinite;
 }
 
-.avatar-root.hit {
+.avatar-root.is-acting {
+  animation-play-state: paused;
+}
+
+.avatar-body,
+.body-layer,
+.hand-layer,
+.head-layer,
+.face {
+  transform-origin: center;
+}
+
+.head-layer.tap-head {
+  animation: head-nod 0.42s ease;
+}
+
+.head-layer.tap-shoulder {
+  animation: shoulder-calm 0.52s ease;
+}
+
+.face.tap-face {
+  animation: face-turn 0.46s ease;
+}
+
+.body-layer.tap-body {
+  animation: body-lean 0.44s ease;
+}
+
+.hand-layer.tap-hand {
+  animation: hand-response 0.48s ease;
+}
+
+.avatar-root.tap-rage {
   animation: hit-bounce 0.34s ease;
 }
 
-.avatar-root.comforted {
-  animation: comfort-bob 0.56s ease;
+.avatar-root.tap-care {
+  animation: comfort-bob 0.6s ease;
 }
 
-.avatar-root.spark {
+.avatar-root.tap-protect {
+  animation: annoyed-shake 0.46s ease;
+}
+
+.avatar-root.tap-boost {
   animation: power-boost 0.42s ease;
-}
-
-.avatar-root.annoyed {
-  animation: annoyed-shake 0.4s ease;
 }
 
 .body-shadow {
@@ -503,6 +536,22 @@ h2 {
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
 }
 
+.effect-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.effect-puff {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  font-size: 20px;
+  opacity: 0;
+  transform: translate(-50%, 0) scale(0.7);
+  animation: pop-effect 0.7s ease forwards;
+}
+
 .hotspot-layer {
   position: absolute;
   inset: 0;
@@ -583,6 +632,10 @@ h2 {
   transform: translate(-50%, 0);
   animation: float-up 1.1s ease forwards;
   box-shadow: var(--shadow);
+}
+
+.floating-tag.delayed {
+  animation-delay: 0.6s;
 }
 
 .floating-tag.good {
@@ -915,6 +968,10 @@ h2 {
   height: 9%;
 }
 
+.expression-happy .eye {
+  transform: scaleY(0.9);
+}
+
 .expression-shy .eye {
   height: 7%;
 }
@@ -951,6 +1008,10 @@ h2 {
   border-bottom-width: 4px;
 }
 
+.expression-speechless .eye {
+  transform: scaleY(0.75);
+}
+
 .expression-tired .eye {
   height: 4%;
   top: 36%;
@@ -975,6 +1036,16 @@ h2 {
   background: rgba(255, 102, 140, 0.45);
 }
 
+.mood-happy .face::before {
+  content: "♥";
+  position: absolute;
+  left: -14px;
+  top: 4px;
+  color: #ff7895;
+  font-size: 20px;
+  opacity: 0.9;
+}
+
 .mood-tired .face::after {
   content: "…";
   position: absolute;
@@ -983,6 +1054,16 @@ h2 {
   color: var(--muted);
   font-size: 24px;
   font-weight: 700;
+}
+
+.mood-protected .face::after {
+  content: "!";
+  position: absolute;
+  right: -8px;
+  top: 10px;
+  color: #ec4b2f;
+  font-size: 24px;
+  font-weight: 800;
 }
 
 @keyframes hit-bounce {
@@ -994,6 +1075,19 @@ h2 {
   }
   100% {
     transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes idle-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    transform: translateY(-2px) scale(1.008);
+  }
+  55% {
+    transform: translateY(0) scale(0.996);
   }
 }
 
@@ -1018,6 +1112,66 @@ h2 {
   }
   100% {
     transform: scale(1);
+  }
+}
+
+@keyframes head-nod {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  35% {
+    transform: translateY(6px) rotate(-4deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes face-turn {
+  0% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  35% {
+    transform: translateX(-46%) rotate(7deg);
+  }
+  100% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+}
+
+@keyframes body-lean {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  35% {
+    transform: translateX(2px) rotate(-5deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes hand-response {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes shoulder-calm {
+  0% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(4px);
+  }
+  100% {
+    transform: translateY(0);
   }
 }
 
@@ -1047,6 +1201,21 @@ h2 {
   100% {
     opacity: 0;
     transform: translate(-50%, -26px);
+  }
+}
+
+@keyframes pop-effect {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.7);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(1.08);
   }
 }
 

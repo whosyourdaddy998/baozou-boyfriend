@@ -59,24 +59,31 @@
               <div class="character-glow"></div>
 
               <div id="floatingFeedback" class="floating-feedback" aria-hidden="true"></div>
+              <div id="effectLayer" class="effect-layer" aria-hidden="true"></div>
 
               <div id="avatarRoot" class="avatar-root" role="img" aria-label="Q版男朋友互动角色">
                 <div class="body-shadow"></div>
                 <div class="avatar-body">
-                  <div class="hair hair-left"></div>
-                  <div class="hair hair-right"></div>
-                  <div class="face">
-                    <div class="blush blush-left"></div>
-                    <div class="blush blush-right"></div>
-                    <div class="brow brow-left"></div>
-                    <div class="brow brow-right"></div>
-                    <div class="eye eye-left"></div>
-                    <div class="eye eye-right"></div>
-                    <div class="mouth"></div>
+                  <div id="bodyLayer" class="body-layer">
+                    <div class="torso"></div>
                   </div>
-                  <div class="arm arm-left"></div>
-                  <div class="arm arm-right"></div>
-                  <div class="torso"></div>
+                  <div id="handLayer" class="hand-layer">
+                    <div class="arm arm-left"></div>
+                    <div class="arm arm-right"></div>
+                  </div>
+                  <div id="headLayer" class="head-layer">
+                    <div class="hair hair-left"></div>
+                    <div class="hair hair-right"></div>
+                    <div id="faceLayer" class="face">
+                      <div class="blush blush-left"></div>
+                      <div class="blush blush-right"></div>
+                      <div class="brow brow-left"></div>
+                      <div class="brow brow-right"></div>
+                      <div class="eye eye-left"></div>
+                      <div class="eye eye-right"></div>
+                      <div class="mouth"></div>
+                    </div>
+                  </div>
                 </div>
                 <img id="photoOverlay" class="photo-overlay hidden" alt="自定义男朋友头像">
               </div>
@@ -107,11 +114,19 @@
                 <span>模式说明</span>
                 <strong id="modeDescription">暴揍模式更适合整蛊，抚摸模式能赚爱心值。</strong>
               </article>
-              <article class="mini-stat">
-                <span>当前表情</span>
-                <strong id="expressionLabel">普通</strong>
-              </article>
-            </div>
+                <article class="mini-stat">
+                  <span>当前表情</span>
+                  <strong id="expressionLabel">普通</strong>
+                </article>
+                <article class="mini-stat">
+                  <span>保护状态</span>
+                  <strong id="protectionLabel">未触发</strong>
+                </article>
+                <article class="mini-stat">
+                  <span>连续模式</span>
+                  <strong id="streakLabel">暂无</strong>
+                </article>
+              </div>
 
             <div class="survival-panel">
               <div class="survival-text">
