@@ -8,9 +8,33 @@ export function loadStorage(defaultState) {
     }
 
     const parsed = JSON.parse(raw);
+    const legacyAvatarUrl = parsed?.settings?.avatarUrl || parsed?.avatarUrl || "";
+    const migratedSettings = {
+      ...defaultState.settings,
+      ...(parsed.settings || {})
+    };
+
+    if (legacyAvatarUrl && !migratedSettings.customAvatarUrl && legacyAvatarUrl !== defaultState.settings.defaultAvatarPath) {
+      migratedSettings.useCustomAvatarUrl = true;
+      migratedSettings.customAvatarUrl = legacyAvatarUrl;
+    }
+
     return {
       ...defaultState,
-      ...parsed
+      ...parsed,
+      settings: migratedSettings,
+      metrics: {
+        ...defaultState.metrics,
+        ...(parsed.metrics || {})
+      },
+      areaCombo: {
+        ...defaultState.areaCombo,
+        ...(parsed.areaCombo || {})
+      },
+      areaCooldownUntil: {
+        ...defaultState.areaCooldownUntil,
+        ...(parsed.areaCooldownUntil || {})
+      }
     };
   } catch (error) {
     return defaultState;

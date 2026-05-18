@@ -2,11 +2,13 @@ import {
   ANNOYED_DURATION_MS,
   COOLDOWN_MS,
   COMBO_WINDOW_MS,
+  LOAD_STATE,
   MODE,
+  RENDER_MODE,
   STATUS,
   areaConfigs,
   comboCurve,
-  defaultReadyPlayerMeUrl,
+  defaultLocalAvatarPath,
   pickRandom,
   unlockGoals
 } from "../config/gameConfig";
@@ -23,12 +25,18 @@ export const initialGameState = {
   unlockedContentCount: 1,
   hiddenEndingLocked: true,
   lastAreaId: "head",
-  speech: "试着点击角色不同部位，看看他会怎么反应。",
+  speech: "试着点击角色不同部位，看看他会怎么回应。",
   floatingDelta: null,
+  renderMode: RENDER_MODE.LITE_3D,
+  loadState: LOAD_STATE.LOADING,
   settings: {
-    avatarUrl: defaultReadyPlayerMeUrl,
-    boyfriendName: "暴走男朋友"
+    boyfriendName: "暴走男朋友",
+    useCustomAvatarUrl: false,
+    customAvatarUrl: "",
+    defaultAvatarPath: defaultLocalAvatarPath
   },
+  fallbackReason: "",
+  lastExpressionAt: 0,
   metrics: {
     careHits: 0,
     rageHits: 0,
@@ -41,7 +49,6 @@ function countUnlocked(state) {
     if (goal.unlockedByDefault) {
       return true;
     }
-
     if (goal.locked) {
       return false;
     }
@@ -50,11 +57,9 @@ function countUnlocked(state) {
     if (threshold.totalInteractions && state.totalInteractions < threshold.totalInteractions) {
       return false;
     }
-
     if (threshold.affection && state.affection < threshold.affection) {
       return false;
     }
-
     if (threshold.heart && state.heart < threshold.heart) {
       return false;
     }
@@ -70,12 +75,11 @@ export function getNextUnlockLabel(state) {
     }
 
     const threshold = goal.threshold || {};
-    const unmet =
+    return (
       (threshold.totalInteractions && state.totalInteractions < threshold.totalInteractions) ||
       (threshold.affection && state.affection < threshold.affection) ||
-      (threshold.heart && state.heart < threshold.heart);
-
-    return unmet;
+      (threshold.heart && state.heart < threshold.heart)
+    );
   });
 
   return nextGoal ? nextGoal.label : "隐藏结局后续开放";
@@ -85,21 +89,14 @@ function getComboMeta(previousAreaCombo, areaId, now) {
   const previous = previousAreaCombo[areaId];
 
   if (!previous || now - previous.lastAt > COMBO_WINDOW_MS) {
-    return {
-      count: 1,
-      multiplier: comboCurve[0],
-      annoyedTriggered: false
-    };
+    return { count: 1, multiplier: comboCurve[0], annoyedTriggered: false };
   }
 
   const count = previous.count + 1;
-  const annoyedTriggered = count >= 5;
-  const multiplier = comboCurve[Math.min(count - 1, comboCurve.length - 1)];
-
   return {
     count,
-    multiplier,
-    annoyedTriggered
+    multiplier: comboCurve[Math.min(count - 1, comboCurve.length - 1)],
+    annoyedTriggered: count >= 5
   };
 }
 
@@ -112,31 +109,33 @@ function buildSpeech(area, mode, blocked) {
     return "这里已经被你点烦了，先冷静五秒。";
   }
 
-  const lines = mode === MODE.CARE ? area.careLines : area.rageLines;
-  return pickRandom(lines);
+  return pickRandom(mode === MODE.CARE ? area.careLines : area.rageLines);
 }
 
 function resolveStatus(area, mode, isCorrect, annoyedTriggered) {
   if (annoyedTriggered) {
     return STATUS.ANNOYED;
   }
-
   if (mode === MODE.RAGE) {
     return area.expressionKey.rage;
   }
-
   return isCorrect ? area.expressionKey.care : STATUS.TIRED;
+}
+
+function resolveSpeechTone(area, mode, blocked, status) {
+  if (blocked || status === STATUS.ANNOYED) {
+    return "refuse";
+  }
+  return mode === MODE.CARE ? area.speechTone.care : area.speechTone.rage;
 }
 
 function maybeAffectionDelta(mode, isCorrect) {
   if (mode !== MODE.CARE) {
     return 0;
   }
-
   if (isCorrect) {
     return Math.random() < 0.3 ? 1 : 0;
   }
-
   return -1;
 }
 
@@ -144,21 +143,12 @@ function resolveHeartDelta(mode, isCorrect, multiplier) {
   if (mode !== MODE.CARE || !isCorrect || multiplier === 0) {
     return 0;
   }
-
-  if (multiplier >= 0.7) {
-    return 1;
-  }
-
-  return 0;
+  return multiplier >= 0.7 ? 1 : 0;
 }
 
 function resolveSurvivalDelta(mode, areaId, multiplier) {
   if (mode === MODE.CARE) {
-    if (areaId === "shoulder" || areaId === "head") {
-      return 2;
-    }
-
-    return 1;
+    return areaId === "shoulder" || areaId === "head" ? 2 : 1;
   }
 
   const baseDamage = areaId === "body" ? -4 : areaId === "leg" ? -3 : -2;
@@ -170,27 +160,17 @@ export function applyInteraction(state, areaId) {
   const area = areaConfigs[areaId];
 
   if (!area) {
-    return {
-      state,
-      effect: null
-    };
+    return { state, effect: null };
   }
 
   const blocked = isAreaBlocked(state, areaId, now);
   const isCorrect = area.correctModes.includes(state.mode);
   const comboMeta = getComboMeta(state.areaCombo, areaId, now);
-
   const nextAreaCombo = {
     ...state.areaCombo,
-    [areaId]: {
-      count: comboMeta.count,
-      lastAt: now
-    }
+    [areaId]: { count: comboMeta.count, lastAt: now }
   };
-
-  const nextAreaCooldownUntil = {
-    ...state.areaCooldownUntil
-  };
+  const nextAreaCooldownUntil = { ...state.areaCooldownUntil };
 
   if (blocked || comboMeta.annoyedTriggered) {
     nextAreaCooldownUntil[areaId] = now + ANNOYED_DURATION_MS;
@@ -202,6 +182,8 @@ export function applyInteraction(state, areaId) {
   const survivalDelta = blocked ? 0 : resolveSurvivalDelta(state.mode, areaId, multiplier);
   const status = blocked ? STATUS.ANNOYED : resolveStatus(area, state.mode, isCorrect, comboMeta.annoyedTriggered);
   const speech = buildSpeech(area, state.mode, blocked);
+  const speechTone = resolveSpeechTone(area, state.mode, blocked, status);
+  const expressionVariant = `${area.animationKey}-${status}`;
 
   const nextState = {
     ...state,
@@ -214,6 +196,7 @@ export function applyInteraction(state, areaId) {
     totalInteractions: state.totalInteractions + 1,
     areaCombo: nextAreaCombo,
     areaCooldownUntil: nextAreaCooldownUntil,
+    lastExpressionAt: now,
     metrics: {
       ...state.metrics,
       careHits: state.metrics.careHits + (state.mode === MODE.CARE ? 1 : 0),
@@ -232,14 +215,18 @@ export function applyInteraction(state, areaId) {
       status,
       animationKey: area.animationKey,
       expressionKey: status,
+      expressionVariant,
       speech,
+      speechTone,
       affectionDelta,
       heartDelta,
       survivalDelta,
       cooldownMs: blocked ? ANNOYED_DURATION_MS : COOLDOWN_MS,
       blocked,
       annoyedTriggered: comboMeta.annoyedTriggered,
-      multiplier
+      multiplier,
+      fxLevel: area.effectLevel[state.mode],
+      renderMode: state.renderMode
     }
   };
 }

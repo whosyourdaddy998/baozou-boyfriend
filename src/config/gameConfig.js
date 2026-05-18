@@ -1,4 +1,4 @@
-export const STORAGE_KEY = "baozou-boyfriend-3d-v1";
+export const STORAGE_KEY = "baozou-boyfriend-3d-v2";
 
 export const STATUS = {
   NORMAL: "normal",
@@ -12,6 +12,18 @@ export const STATUS = {
 export const MODE = {
   CARE: "care",
   RAGE: "rage"
+};
+
+export const RENDER_MODE = {
+  FULL_3D: "full3d",
+  LITE_3D: "lite3d",
+  FALLBACK_2D: "fallback2d"
+};
+
+export const LOAD_STATE = {
+  LOADING: "loading",
+  READY: "ready",
+  FALLBACK: "fallback"
 };
 
 export const TIMINGS = {
@@ -28,6 +40,8 @@ export const COOLDOWN_MS = 320;
 
 export const comboCurve = [1, 0.7, 0.4, 0.1, 0];
 
+export const defaultLocalAvatarPath = "/models/default-boyfriend.glb";
+
 export const unlockGoals = [
   { id: "intro", label: "3D 版初见面", unlockedByDefault: true },
   { id: "care-learner", label: "第一次有效安抚", threshold: { heart: 3 } },
@@ -39,58 +53,13 @@ export const unlockGoals = [
   { id: "hidden-ending", label: "隐藏结局（后续开放）", locked: true }
 ];
 
-export const defaultReadyPlayerMeUrl =
-  "https://models.readyplayer.me/64d1f5440e131d29623f2fda.glb";
-
 export const mixamoSlots = [
-  {
-    clipName: "Idle",
-    file: "/mixamo/Idle.fbx",
-    usableModes: [MODE.CARE, MODE.RAGE],
-    targetAreas: ["all"],
-    blendIn: 0.2,
-    blendOut: 0.2
-  },
-  {
-    clipName: "Shy",
-    file: "/mixamo/Shy.fbx",
-    usableModes: [MODE.CARE],
-    targetAreas: ["head", "face"],
-    blendIn: 0.15,
-    blendOut: 0.2
-  },
-  {
-    clipName: "Hit",
-    file: "/mixamo/Hit.fbx",
-    usableModes: [MODE.RAGE],
-    targetAreas: ["body", "face", "leg"],
-    blendIn: 0.1,
-    blendOut: 0.2
-  },
-  {
-    clipName: "Push Back",
-    file: "/mixamo/PushBack.fbx",
-    usableModes: [MODE.RAGE],
-    targetAreas: ["body", "handLeft", "handRight"],
-    blendIn: 0.1,
-    blendOut: 0.2
-  },
-  {
-    clipName: "Wave",
-    file: "/mixamo/Wave.fbx",
-    usableModes: [MODE.CARE],
-    targetAreas: ["handLeft", "handRight"],
-    blendIn: 0.2,
-    blendOut: 0.2
-  },
-  {
-    clipName: "Angry",
-    file: "/mixamo/Angry.fbx",
-    usableModes: [MODE.RAGE],
-    targetAreas: ["all"],
-    blendIn: 0.1,
-    blendOut: 0.25
-  }
+  { clipName: "Idle", file: "/mixamo/Idle.fbx" },
+  { clipName: "Shy", file: "/mixamo/Shy.fbx" },
+  { clipName: "Hit", file: "/mixamo/Hit.fbx" },
+  { clipName: "PushBack", file: "/mixamo/PushBack.fbx" },
+  { clipName: "Wave", file: "/mixamo/Wave.fbx" },
+  { clipName: "Angry", file: "/mixamo/Angry.fbx" }
 ];
 
 export const areaConfigs = {
@@ -99,20 +68,19 @@ export const areaConfigs = {
     label: "头部",
     correctModes: [MODE.CARE],
     animationKey: "head",
-    expressionKey: {
-      care: STATUS.SHY,
-      rage: STATUS.ANGRY
-    },
+    expressionKey: { care: STATUS.SHY, rage: STATUS.ANGRY },
+    speechTone: { care: "gentle", rage: "warning" },
+    effectLevel: { care: "soft", rage: "sharp" },
     timings: TIMINGS,
     careLines: [
-      "你又摸我头……这招也太犯规了。",
-      "别把我当小孩啊，不过还挺舒服。",
-      "好吧，头顶这一下确实把我哄到了。"
+      "别这样摸头，我会一下子心软。",
+      "你这一摸，像在哄人。",
+      "头顶这里……真的很容易让我认输。"
     ],
     rageLines: [
-      "别敲头，我会记仇的。",
-      "你这一下有点像在立规矩。",
-      "头顶警报已经响了。"
+      "别敲头，我真的会记仇。",
+      "头顶是警戒区，你现在踩线了。",
+      "你这一下像在故意惹我炸毛。"
     ]
   },
   face: {
@@ -120,62 +88,59 @@ export const areaConfigs = {
     label: "脸部",
     correctModes: [MODE.CARE],
     animationKey: "face",
-    expressionKey: {
-      care: STATUS.SHY,
-      rage: STATUS.ANNOYED
-    },
+    expressionKey: { care: STATUS.SHY, rage: STATUS.ANNOYED },
+    speechTone: { care: "shy", rage: "protest" },
+    effectLevel: { care: "soft", rage: "sharp" },
     timings: TIMINGS,
     careLines: [
-      "靠这么近，我真的会脸红。",
-      "别一直戳脸，我会不好意思。",
-      "你是不是故意看我反应。"
+      "靠这么近，我会脸红的。",
+      "别一直碰脸，我都不知道该看哪里了。",
+      "你是不是故意想看我害羞。"
     ],
     rageLines: [
       "脸不是给你拿来乱闹的。",
-      "你再戳，我就真的无语了。",
-      "这个位置很容易把我惹毛。"
+      "你再戳，我就直接无语给你看。",
+      "这个位置最容易把我点烦。"
     ]
   },
   handLeft: {
     id: "handLeft",
     label: "左手",
     correctModes: [MODE.CARE, MODE.RAGE],
-    animationKey: "hand",
-    expressionKey: {
-      care: STATUS.HAPPY,
-      rage: STATUS.ANGRY
-    },
+    animationKey: "handLeft",
+    expressionKey: { care: STATUS.HAPPY, rage: STATUS.ANGRY },
+    speechTone: { care: "gentle", rage: "warning" },
+    effectLevel: { care: "soft", rage: "medium" },
     timings: TIMINGS,
     careLines: [
       "左手先借你一下，但别握太久。",
-      "这一摸像牵手，不像试探。",
-      "你碰手的时候，我会下意识靠近一点。"
+      "这样碰手，像是想安抚我。",
+      "你一碰这里，我就会不自觉靠近一点。"
     ],
     rageLines: [
-      "左手都被你逼得想甩开了。",
-      "别扒拉我手，我会躲。",
-      "你这一下像在阻止我逃跑。"
+      "左手都快被你逼得想甩开了。",
+      "再扒拉我手，我就要挡你了。",
+      "这个动作已经很像挑衅。"
     ]
   },
   handRight: {
     id: "handRight",
     label: "右手",
     correctModes: [MODE.CARE, MODE.RAGE],
-    animationKey: "hand",
-    expressionKey: {
-      care: STATUS.HAPPY,
-      rage: STATUS.ANGRY
-    },
+    animationKey: "handRight",
+    expressionKey: { care: STATUS.HAPPY, rage: STATUS.ANGRY },
+    speechTone: { care: "gentle", rage: "warning" },
+    effectLevel: { care: "soft", rage: "medium" },
     timings: TIMINGS,
     careLines: [
-      "右手被你碰到，心情有一点点变好。",
-      "你碰这里的时候，我会有种被安抚到的错觉。",
-      "如果是这样碰一下，我还能接受。"
+      "右手被你碰到，心情会慢慢变软。",
+      "你这样轻轻碰一下，我还能接受。",
+      "这一碰不像试探，更像是在哄我。"
     ],
     rageLines: [
-      "右手要开始挡你了。",
-      "你别逼我用手把你推开。",
-      "这个动作已经进入防御状态了。"
+      "右手已经准备挡你了。",
+      "别逼我直接把你推开。",
+      "你再来一下，我就真不客气了。"
     ]
   },
   shoulder: {
@@ -183,19 +148,18 @@ export const areaConfigs = {
     label: "肩膀",
     correctModes: [MODE.CARE],
     animationKey: "shoulder",
-    expressionKey: {
-      care: STATUS.HAPPY,
-      rage: STATUS.TIRED
-    },
+    expressionKey: { care: STATUS.HAPPY, rage: STATUS.TIRED },
+    speechTone: { care: "gentle", rage: "flat" },
+    effectLevel: { care: "soft", rage: "low" },
     timings: TIMINGS,
     careLines: [
       "拍肩这种安抚，我还挺吃的。",
-      "肩膀放松了一点，今天先原谅你。",
+      "肩膀一下子放松了。",
       "你这样碰一下，像在跟我说别紧张。"
     ],
     rageLines: [
       "肩膀不是给你拿来试压的。",
-      "你再拍，我就只会觉得累。",
+      "再拍我只会觉得累。",
       "这个位置现在只想躲开。"
     ]
   },
@@ -204,20 +168,19 @@ export const areaConfigs = {
     label: "身体",
     correctModes: [MODE.RAGE],
     animationKey: "body",
-    expressionKey: {
-      care: STATUS.TIRED,
-      rage: STATUS.ANGRY
-    },
+    expressionKey: { care: STATUS.TIRED, rage: STATUS.ANGRY },
+    speechTone: { care: "flat", rage: "protest" },
+    effectLevel: { care: "low", rage: "strong" },
     timings: TIMINGS,
     careLines: [
-      "这里先别碰，我会下意识警惕。",
-      "你突然碰这里，我会后退。",
-      "这块区域还是先克制一点。"
+      "这里先别碰，我会本能警惕。",
+      "这一下让我想后退。",
+      "这个位置还是先克制一点。"
     ],
     rageLines: [
-      "身体已经在防御了。",
+      "身体已经进入防御动作了。",
       "你再来一下，我就要后仰躲了。",
-      "这个动作直接把我打进警戒线。"
+      "这一碰直接把我点进警戒线。"
     ]
   },
   leg: {
@@ -225,20 +188,19 @@ export const areaConfigs = {
     label: "腿部",
     correctModes: [MODE.RAGE],
     animationKey: "leg",
-    expressionKey: {
-      care: STATUS.TIRED,
-      rage: STATUS.ANNOYED
-    },
+    expressionKey: { care: STATUS.TIRED, rage: STATUS.ANNOYED },
+    speechTone: { care: "flat", rage: "protest" },
+    effectLevel: { care: "low", rage: "medium" },
     timings: TIMINGS,
     careLines: [
-      "腿边这种试探，我会先躲一下。",
+      "这里我会先躲一下。",
       "先别碰腿，我还没放松到那一步。",
-      "这个位置会让我想后撤。"
+      "这块区域会让我本能后撤。"
     ],
     rageLines: [
-      "腿已经条件反射想闪了。",
+      "腿已经条件反射想闪开了。",
       "你一碰这里，我就想往后躲。",
-      "这块区域不适合高频骚扰。"
+      "这个位置不适合高频骚扰。"
     ]
   }
 };
