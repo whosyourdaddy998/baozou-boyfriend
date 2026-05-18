@@ -40,7 +40,7 @@ export const COOLDOWN_MS = 320;
 
 export const comboCurve = [1, 0.7, 0.4, 0.1, 0];
 
-export const defaultLocalAvatarPath = "/models/default-boyfriend.glb";
+export const defaultLocalAvatarPath = `${import.meta.env.BASE_URL}models/default-boyfriend.glb`;
 
 export const unlockGoals = [
   { id: "intro", label: "3D 版初见面", unlockedByDefault: true },

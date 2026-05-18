@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CharacterScene from "./components/CharacterScene";
 import {
   LOAD_STATE,
@@ -162,14 +162,28 @@ export default function App() {
     }
   }
 
-  function handleRenderStateChange(payload) {
-    setGameState((current) => ({
-      ...current,
-      renderMode: payload.renderMode || current.renderMode,
-      loadState: payload.loadState || current.loadState,
-      fallbackReason: payload.fallbackReason || ""
-    }));
-  }
+  const handleRenderStateChange = useCallback(function handleRenderStateChange(payload) {
+    setGameState((current) => {
+      const nextRenderMode = payload.renderMode ?? current.renderMode;
+      const nextLoadState = payload.loadState ?? current.loadState;
+      const nextFallbackReason = payload.fallbackReason ?? current.fallbackReason;
+
+      if (
+        nextRenderMode === current.renderMode &&
+        nextLoadState === current.loadState &&
+        nextFallbackReason === current.fallbackReason
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        renderMode: nextRenderMode,
+        loadState: nextLoadState,
+        fallbackReason: nextFallbackReason
+      };
+    });
+  }, []);
 
   function handleReset() {
     const nextState = {

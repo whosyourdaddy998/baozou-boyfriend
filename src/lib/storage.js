@@ -19,6 +19,10 @@ export function loadStorage(defaultState) {
       migratedSettings.customAvatarUrl = legacyAvatarUrl;
     }
 
+    if (!migratedSettings.defaultAvatarPath || migratedSettings.defaultAvatarPath.startsWith("/models/")) {
+      migratedSettings.defaultAvatarPath = defaultState.settings.defaultAvatarPath;
+    }
+
     return {
       ...defaultState,
       ...parsed,
