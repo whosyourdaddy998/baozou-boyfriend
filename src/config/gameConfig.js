@@ -1,4 +1,4 @@
-export const STORAGE_KEY = "baozou-boyfriend-3d-v2";
+export const STORAGE_KEY = "baozou-boyfriend-3d-v3";
 
 export const STATUS = {
   NORMAL: "normal",
@@ -44,12 +44,12 @@ export const defaultLocalAvatarPath = `${import.meta.env.BASE_URL}models/default
 
 export const unlockGoals = [
   { id: "intro", label: "3D 版初见面", unlockedByDefault: true },
-  { id: "care-learner", label: "第一次有效安抚", threshold: { heart: 3 } },
-  { id: "head-pat-pro", label: "摸头老手", threshold: { totalInteractions: 20 } },
-  { id: "blush-hunter", label: "成功哄脸红", threshold: { affection: 20 } },
-  { id: "steady-company", label: "陪伴稳定期", threshold: { heart: 12 } },
-  { id: "gesture-reader", label: "懂得看情绪", threshold: { affection: 45 } },
-  { id: "trusted-close", label: "已经很熟了", threshold: { affection: 60 } },
+  { id: "care-learner", label: "有效安抚 3 次", threshold: { heart: 3 } },
+  { id: "head-pat-pro", label: "互动 20 次", threshold: { totalInteractions: 20 } },
+  { id: "blush-hunter", label: "好感达到 20", threshold: { affection: 20 } },
+  { id: "steady-company", label: "爱心值达到 12", threshold: { heart: 12 } },
+  { id: "gesture-reader", label: "好感达到 45", threshold: { affection: 45 } },
+  { id: "trusted-close", label: "好感达到 60", threshold: { affection: 60 } },
   { id: "hidden-ending", label: "隐藏结局（后续开放）", locked: true }
 ];
 
@@ -69,18 +69,18 @@ export const areaConfigs = {
     correctModes: [MODE.CARE],
     animationKey: "head",
     expressionKey: { care: STATUS.SHY, rage: STATUS.ANGRY },
-    speechTone: { care: "gentle", rage: "warning" },
-    effectLevel: { care: "soft", rage: "sharp" },
+    speechTone: { care: "gentle", rage: "protest" },
+    effectLevel: { care: "sweet", rage: "boom" },
     timings: TIMINGS,
     careLines: [
-      "别这样摸头，我会一下子心软。",
-      "你这一摸，像在哄人。",
-      "头顶这里……真的很容易让我认输。"
+      "头顶被摸到会自动变乖，这个设定很危险。",
+      "别一直揉我头发，我的帅气发型要报警了。",
+      "好吧，就让你摸一下，不能得寸进尺。"
     ],
     rageLines: [
-      "别敲头，我真的会记仇。",
-      "头顶是警戒区，你现在踩线了。",
-      "你这一下像在故意惹我炸毛。"
+      "砰！你这是拍头还是给我重启系统？",
+      "头顶警报响了，男朋友进入防御姿态。",
+      "再敲头，我就把委屈挂脸上给你看。"
     ]
   },
   face: {
@@ -90,17 +90,17 @@ export const areaConfigs = {
     animationKey: "face",
     expressionKey: { care: STATUS.SHY, rage: STATUS.ANNOYED },
     speechTone: { care: "shy", rage: "protest" },
-    effectLevel: { care: "soft", rage: "sharp" },
+    effectLevel: { care: "spark", rage: "boom" },
     timings: TIMINGS,
     careLines: [
-      "靠这么近，我会脸红的。",
-      "别一直碰脸，我都不知道该看哪里了。",
-      "你是不是故意想看我害羞。"
+      "你靠这么近，我脸红不是很合理吗？",
+      "戳脸犯规，害羞值已经溢出来了。",
+      "别看了，再看我就装作没看见你。"
     ],
     rageLines: [
-      "脸不是给你拿来乱闹的。",
-      "你再戳，我就直接无语给你看。",
-      "这个位置最容易把我点烦。"
+      "啪！脸不是按钮，别拿来连点测试。",
+      "你再戳，我就用无语表情反击。",
+      "脸部受到攻击，尊严正在加载补丁。"
     ]
   },
   handLeft: {
@@ -110,17 +110,17 @@ export const areaConfigs = {
     animationKey: "handLeft",
     expressionKey: { care: STATUS.HAPPY, rage: STATUS.ANGRY },
     speechTone: { care: "gentle", rage: "warning" },
-    effectLevel: { care: "soft", rage: "medium" },
+    effectLevel: { care: "sweet", rage: "pop" },
     timings: TIMINGS,
     careLines: [
-      "左手先借你一下，但别握太久。",
-      "这样碰手，像是想安抚我。",
-      "你一碰这里，我就会不自觉靠近一点。"
+      "左手借你牵一下，但不能偷偷捏太久。",
+      "这样碰手，像是在说别紧张。",
+      "你一碰这里，我就有点想靠近。"
     ],
     rageLines: [
-      "左手都快被你逼得想甩开了。",
-      "再扒拉我手，我就要挡你了。",
-      "这个动作已经很像挑衅。"
+      "左手申请撤退！",
+      "别拽我手，我会甩开但不会真的生气。",
+      "这一下像突然抢遥控器，很离谱。"
     ]
   },
   handRight: {
@@ -130,17 +130,17 @@ export const areaConfigs = {
     animationKey: "handRight",
     expressionKey: { care: STATUS.HAPPY, rage: STATUS.ANGRY },
     speechTone: { care: "gentle", rage: "warning" },
-    effectLevel: { care: "soft", rage: "medium" },
+    effectLevel: { care: "sweet", rage: "pop" },
     timings: TIMINGS,
     careLines: [
-      "右手被你碰到，心情会慢慢变软。",
-      "你这样轻轻碰一下，我还能接受。",
-      "这一碰不像试探，更像是在哄我。"
+      "右手被轻轻碰到，心情会变软一点。",
+      "这一下还挺温柔，我勉强给高分。",
+      "像牵手预告片，先别太得意。"
     ],
     rageLines: [
-      "右手已经准备挡你了。",
-      "别逼我直接把你推开。",
-      "你再来一下，我就真不客气了。"
+      "右手已经准备挡开你了。",
+      "你这是握手还是摇可乐？",
+      "再来一下，我就把手藏起来。"
     ]
   },
   shoulder: {
@@ -150,17 +150,17 @@ export const areaConfigs = {
     animationKey: "shoulder",
     expressionKey: { care: STATUS.HAPPY, rage: STATUS.TIRED },
     speechTone: { care: "gentle", rage: "flat" },
-    effectLevel: { care: "soft", rage: "low" },
+    effectLevel: { care: "spark", rage: "pop" },
     timings: TIMINGS,
     careLines: [
-      "拍肩这种安抚，我还挺吃的。",
-      "肩膀一下子放松了。",
-      "你这样碰一下，像在跟我说别紧张。"
+      "肩膀被拍拍，整个人都放松了一点。",
+      "这个安抚方式还不错，准许继续。",
+      "好像真的没那么紧张了。"
     ],
     rageLines: [
-      "肩膀不是给你拿来试压的。",
-      "再拍我只会觉得累。",
-      "这个位置现在只想躲开。"
+      "肩膀不是打击乐器，节奏收一收。",
+      "再拍我只会觉得你很闲。",
+      "我现在只想把肩膀缩起来。"
     ]
   },
   body: {
@@ -170,17 +170,17 @@ export const areaConfigs = {
     animationKey: "body",
     expressionKey: { care: STATUS.TIRED, rage: STATUS.ANGRY },
     speechTone: { care: "flat", rage: "protest" },
-    effectLevel: { care: "low", rage: "strong" },
+    effectLevel: { care: "pop", rage: "mega" },
     timings: TIMINGS,
     careLines: [
-      "这里先别碰，我会本能警惕。",
-      "这一下让我想后退。",
-      "这个位置还是先克制一点。"
+      "这里先别碰，我会本能后退。",
+      "这个位置让我有点警惕，换个温柔点的地方吧。",
+      "安抚不是这样安抚的，老师敲黑板。"
     ],
     rageLines: [
-      "身体已经进入防御动作了。",
-      "你再来一下，我就要后仰躲了。",
-      "这一碰直接把我点进警戒线。"
+      "轰！身体进入防御模式，求生值正在尖叫。",
+      "这一下有点狠，我要战略性后仰。",
+      "你这是整蛊，不是互动，记小本本了。"
     ]
   },
   leg: {
@@ -190,17 +190,17 @@ export const areaConfigs = {
     animationKey: "leg",
     expressionKey: { care: STATUS.TIRED, rage: STATUS.ANNOYED },
     speechTone: { care: "flat", rage: "protest" },
-    effectLevel: { care: "low", rage: "medium" },
+    effectLevel: { care: "pop", rage: "boom" },
     timings: TIMINGS,
     careLines: [
-      "这里我会先躲一下。",
-      "先别碰腿，我还没放松到那一步。",
-      "这块区域会让我本能后撤。"
+      "腿部会本能躲开，先别从这里开始。",
+      "这里不适合温柔互动，我先退半步。",
+      "这个地方有点痒，也有点尴尬。"
     ],
     rageLines: [
-      "腿已经条件反射想闪开了。",
-      "你一碰这里，我就想往后躲。",
-      "这个位置不适合高频骚扰。"
+      "腿已经条件反射想跑路了。",
+      "你一碰这里，我就想原地闪现。",
+      "抗议！腿部不接受高频骚扰。"
     ]
   }
 };

@@ -32,10 +32,49 @@ function formatArea(areaId) {
 function formatRenderMode(renderMode) {
   const labels = {
     [RENDER_MODE.FULL_3D]: "完整 3D",
-    [RENDER_MODE.LITE_3D]: "轻量 3D",
+    [RENDER_MODE.LITE_3D]: "手机 Q 版 3D",
     [RENDER_MODE.FALLBACK_2D]: "降级互动"
   };
-  return labels[renderMode] || "轻量 3D";
+  return labels[renderMode] || "手机 Q 版 3D";
+}
+
+function isSmallScreen() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return window.matchMedia("(max-width: 720px)").matches;
+}
+
+function getImpactWords(effect) {
+  if (!effect) {
+    return ["", "", ""];
+  }
+  if (effect.blocked || effect.status === STATUS.ANNOYED) {
+    return ["拒绝", "炸毛", "冷却中"];
+  }
+  if (effect.mode === MODE.CARE) {
+    const map = {
+      head: ["摸摸", "心软", "+乖巧"],
+      face: ["脸红", "咻", "害羞暴击"],
+      handLeft: ["牵手", "贴贴", "安心"],
+      handRight: ["牵手", "贴贴", "安心"],
+      shoulder: ["放松", "呼", "安抚成功"],
+      body: ["警惕", "退退", "换个地方"],
+      leg: ["躲开", "痒", "别闹"]
+    };
+    return map[effect.areaId] || ["贴贴", "心软", "哄好"];
+  }
+
+  const map = {
+    head: ["咚", "脑袋警报", "嗷"],
+    face: ["啪", "无语", "脸部抗议"],
+    handLeft: ["甩开", "别拽", "哼"],
+    handRight: ["挡开", "别拽", "哼"],
+    shoulder: ["拍肩", "累了", "别敲"],
+    body: ["轰", "防御", "求生警报"],
+    leg: ["闪避", "跑路", "抗议"]
+  };
+  return map[effect.areaId] || ["砰", "爆炸", "抗议"];
 }
 
 function DeltaPill({ label, value, tone }) {
@@ -51,7 +90,24 @@ function DeltaPill({ label, value, tone }) {
   );
 }
 
-function useTimedFeedback(gameState, setGameState) {
+function ImpactLayer({ effect }) {
+  const words = getImpactWords(effect);
+
+  return (
+    <div className={`impact-layer ${effect ? "is-active" : ""}`} aria-hidden="true">
+      <span className="impact-word impact-main">{words[0]}</span>
+      <span className="impact-word impact-side-a">{words[1]}</span>
+      <span className="impact-word impact-side-b">{words[2]}</span>
+      <span className="impact-ring ring-a"></span>
+      <span className="impact-ring ring-b"></span>
+      <span className="impact-spark spark-a"></span>
+      <span className="impact-spark spark-b"></span>
+      <span className="impact-spark spark-c"></span>
+    </div>
+  );
+}
+
+function useTimedFeedback(gameState) {
   const timersRef = useRef([]);
   const [displaySpeech, setDisplaySpeech] = useState(gameState.speech);
   const [displayStatus, setDisplayStatus] = useState(gameState.status);
@@ -102,6 +158,7 @@ function useTimedFeedback(gameState, setGameState) {
   }
 
   function syncFromState(nextState) {
+    clearTimers();
     setDisplaySpeech(nextState.speech);
     setDisplayStatus(nextState.status);
     setSpeechTone("idle");
@@ -122,7 +179,7 @@ function useTimedFeedback(gameState, setGameState) {
 
 export default function App() {
   const [gameState, setGameState] = useState(() => loadStorage(initialGameState));
-  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(() => !isSmallScreen());
   const [activePanel, setActivePanel] = useState("record");
   const {
     displaySpeech,
@@ -132,7 +189,7 @@ export default function App() {
     pendingEffect,
     stageInteraction,
     syncFromState
-  } = useTimedFeedback(gameState, setGameState);
+  } = useTimedFeedback(gameState);
 
   useEffect(() => {
     saveStorage(gameState);
@@ -147,7 +204,9 @@ export default function App() {
       const nextState = {
         ...current,
         mode,
-        speech: mode === MODE.CARE ? "轻一点，先试试安抚他。" : "现在切到暴揍模式，小心别点太疯。"
+        speech: mode === MODE.CARE
+          ? "切到抚摸模式：现在适合摸头、戳脸、牵手和拍拍肩。"
+          : "切到暴揍模式：可以整蛊，但别把他点到炸毛。"
       };
       syncFromState(nextState);
       return nextState;
@@ -205,11 +264,22 @@ export default function App() {
   const hiddenEndingText = gameState.hiddenEndingLocked ? "后续版本开放" : "可触发";
   const boyfriendName = gameState.settings.boyfriendName || "暴走男朋友";
   const renderModeLabel = formatRenderMode(gameState.renderMode);
+  const modeLabel = gameState.mode === MODE.CARE ? "抚摸模式" : "暴揍模式";
 
   const panelClass = useMemo(
     () => `drawer-panel ${drawerOpen ? "is-open" : "is-closed"} panel-${activePanel}`,
     [activePanel, drawerOpen]
   );
+
+  const sceneClass = [
+    "scene-wrap",
+    `expression-${displayStatus}`,
+    `tone-${speechTone}`,
+    `render-${gameState.renderMode}`,
+    pendingEffect ? "is-reacting" : "",
+    pendingEffect ? `area-${pendingEffect.areaId}` : "",
+    pendingEffect ? `fx-${pendingEffect.fxLevel}` : ""
+  ].filter(Boolean).join(" ");
 
   return (
     <div className={`app-shell mode-${gameState.mode}`}>
@@ -218,39 +288,14 @@ export default function App() {
           <p className="eyebrow">3D Touch Drama</p>
           <h1>{boyfriendName}</h1>
         </div>
-        <button className="ghost-button" type="button" onClick={() => setDrawerOpen((value) => !value)}>
-          {drawerOpen ? "收起面板" : "展开面板"}
+        <button className="ghost-button panel-toggle" type="button" onClick={() => setDrawerOpen((value) => !value)}>
+          {drawerOpen ? "收起面板" : "打开面板"}
         </button>
       </header>
 
       <main className="stage-layout">
         <section className="scene-card">
-          <div className="resource-strip">
-            <div className="mode-switch">
-              <button
-                className={`mode-button ${gameState.mode === MODE.CARE ? "is-active" : ""}`}
-                type="button"
-                onClick={() => handleModeChange(MODE.CARE)}
-              >
-                抚摸模式
-              </button>
-              <button
-                className={`mode-button ${gameState.mode === MODE.RAGE ? "is-active" : ""}`}
-                type="button"
-                onClick={() => handleModeChange(MODE.RAGE)}
-              >
-                暴揍模式
-              </button>
-            </div>
-            <div className="pill-row">
-              <span className="resource-pill">爱心值 <strong>{gameState.heart}</strong></span>
-              <span className="resource-pill">好感值 <strong>{gameState.affection}</strong></span>
-              <span className="resource-pill">求生值 <strong>{gameState.survival}</strong></span>
-              <span className="resource-pill">解锁 <strong>{unlockCount}</strong></span>
-            </div>
-          </div>
-
-          <div className={`scene-wrap expression-${displayStatus} tone-${speechTone} render-${gameState.renderMode}`}>
+          <div className={sceneClass}>
             <CharacterScene
               avatarUrl={avatarUrl}
               currentMode={gameState.mode}
@@ -263,16 +308,32 @@ export default function App() {
             />
 
             <div className="scene-overlay">
-              <div className="speech-box">
-                <span className="speech-tag">
-                  {gameState.loadState === LOAD_STATE.LOADING
-                    ? "加载中"
-                    : gameState.loadState === LOAD_STATE.FALLBACK
-                      ? "已降级"
-                      : "实时反应"}
-                </span>
-                <p>{displaySpeech}</p>
+              <div className="hud-top">
+                <div className="mode-switch">
+                  <button
+                    className={`mode-button ${gameState.mode === MODE.CARE ? "is-active" : ""}`}
+                    type="button"
+                    onClick={() => handleModeChange(MODE.CARE)}
+                  >
+                    抚摸
+                  </button>
+                  <button
+                    className={`mode-button ${gameState.mode === MODE.RAGE ? "is-active" : ""}`}
+                    type="button"
+                    onClick={() => handleModeChange(MODE.RAGE)}
+                  >
+                    暴揍
+                  </button>
+                </div>
+                <div className="pill-row">
+                  <span className="resource-pill">爱心 <strong>{gameState.heart}</strong></span>
+                  <span className="resource-pill">好感 <strong>{gameState.affection}</strong></span>
+                  <span className="resource-pill">求生 <strong>{gameState.survival}</strong></span>
+                  <span className="resource-pill">解锁 <strong>{unlockCount}</strong></span>
+                </div>
               </div>
+
+              <ImpactLayer effect={pendingEffect} />
 
               <div className="delta-stack">
                 {deltaVisible && pendingEffect ? (
@@ -291,6 +352,25 @@ export default function App() {
                   <span className="blush blush-left"></span>
                   <span className="blush blush-right"></span>
                   <span className="mouth"></span>
+                </div>
+              </div>
+
+              <div className="speech-dock">
+                <div className="speech-box">
+                  <span className="speech-tag">
+                    {gameState.loadState === LOAD_STATE.LOADING
+                      ? "加载中"
+                      : gameState.loadState === LOAD_STATE.FALLBACK
+                        ? "已降级"
+                        : "实时反应"}
+                  </span>
+                  <p>{displaySpeech}</p>
+                </div>
+                <div className="live-hint">
+                  <span>{modeLabel}</span>
+                  <span>{statusLabel}</span>
+                  <span>{areaLabel}</span>
+                  <span>{renderModeLabel}</span>
                 </div>
               </div>
 
@@ -337,7 +417,7 @@ export default function App() {
                   <strong>{gameState.totalInteractions}</strong>
                 </article>
                 <article className="mini-card">
-                  <span>正确互动</span>
+                  <span>有效互动</span>
                   <strong>{gameState.metrics.correctHits}</strong>
                 </article>
                 <article className="mini-card">
@@ -352,7 +432,7 @@ export default function App() {
 
               <div className="tips-block">
                 <h2>当前节奏</h2>
-                <p>同一区域连续点击会衰减为 100% / 70% / 40% / 10% / 0%，三秒内连点五次会进入烦躁冷却。</p>
+                <p>同一区域连续点击收益会递减为 100% / 70% / 40% / 10% / 0%，三秒内连点五次会让他炸毛 5 秒。</p>
               </div>
 
               <div className="tips-block">
@@ -373,15 +453,15 @@ export default function App() {
             <div className="panel-content">
               <div className="tips-block">
                 <h2>点击规则</h2>
-                <p>手机和桌面都直接点角色本体。抚摸模式优先点头、脸、肩膀和手；暴揍模式优先点身体、脸、腿和手。</p>
+                <p>手机上直接点角色本体。抚摸模式优先点头、脸、肩膀和手；暴揍模式会出现更夸张的抗议、爆炸贴纸和求生值变化。</p>
               </div>
               <div className="tips-block">
                 <h2>为什么有时没收益</h2>
-                <p>如果你连续点同一个地方，收益会递减；被点烦之后，他会进入 5 秒烦躁状态，直接拒绝互动。</p>
+                <p>同一个地方狂点会递减，点烦之后他会进入烦躁冷却，不给收益，只给拒绝反馈。</p>
               </div>
               <div className="tips-block">
-                <h2>手机不显示怎么办</h2>
-                <p>这版已经内置本地模型并加入自动降级。即使 3D 失败，也会回退成可见可玩的轻量角色展示层。</p>
+                <h2>手机显示策略</h2>
+                <p>手机默认使用更稳定的 Q 版轻量 3D 角色，减少遮挡和加载压力。桌面端会继续尝试完整 3D 模型。</p>
               </div>
             </div>
           ) : null}
@@ -463,9 +543,9 @@ export default function App() {
               </div>
 
               <div className="tips-block">
-                <h2>首版说明</h2>
+                <h2>版本说明</h2>
                 <p>
-                  默认模型已经内置在仓库里，不再依赖外链。当前保留 {mixamoSlots.length} 个动画槽位，先以程序化表情和局部动作保证互动细腻度。
+                  当前保留 {mixamoSlots.length} 个动画槽位。手机端先用稳定 Q 版 3D，优先保证比例、完整度和点击反馈。
                 </p>
               </div>
 

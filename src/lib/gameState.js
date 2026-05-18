@@ -25,7 +25,7 @@ export const initialGameState = {
   unlockedContentCount: 1,
   hiddenEndingLocked: true,
   lastAreaId: "head",
-  speech: "试着点击角色不同部位，看看他会怎么回应。",
+  speech: "点点不同部位试试，手机上也会有明显反应。",
   floatingDelta: null,
   renderMode: RENDER_MODE.LITE_3D,
   loadState: LOAD_STATE.LOADING,
@@ -82,7 +82,7 @@ export function getNextUnlockLabel(state) {
     );
   });
 
-  return nextGoal ? nextGoal.label : "隐藏结局后续开放";
+  return nextGoal ? nextGoal.label : "隐藏结局后续开放，先把他逗到破防边缘。";
 }
 
 function getComboMeta(previousAreaCombo, areaId, now) {
@@ -106,7 +106,7 @@ function isAreaBlocked(state, areaId, now) {
 
 function buildSpeech(area, mode, blocked) {
   if (blocked) {
-    return "这里已经被你点烦了，先冷静五秒。";
+    return "这里已经被你点烦了，先冷静 5 秒，不然他要炸毛。";
   }
 
   return pickRandom(mode === MODE.CARE ? area.careLines : area.rageLines);

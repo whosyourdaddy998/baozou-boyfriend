@@ -105,9 +105,7 @@ function useAvatarScene(url, onRenderStateChange) {
     let disposed = false;
     const loader = new GLTFLoader();
 
-    onRenderStateChange({
-      loadState: LOAD_STATE.LOADING
-    });
+    onRenderStateChange({ loadState: LOAD_STATE.LOADING });
     setLoadFailed(false);
 
     loader.load(
@@ -125,9 +123,7 @@ function useAvatarScene(url, onRenderStateChange) {
           }
         });
         setScene(clone);
-        onRenderStateChange({
-          loadState: LOAD_STATE.READY
-        });
+        onRenderStateChange({ loadState: LOAD_STATE.READY });
       },
       undefined,
       () => {
@@ -139,7 +135,7 @@ function useAvatarScene(url, onRenderStateChange) {
         setLoadFailed(true);
         onRenderStateChange({
           loadState: LOAD_STATE.FALLBACK,
-          fallbackReason: "模型加载失败，已切换到轻量角色。"
+          fallbackReason: "模型加载失败，已切换到轻量 Q 版角色。"
         });
       }
     );
@@ -169,13 +165,12 @@ function FullAvatar({ avatarUrl, currentMode, status, onHit, interactionEffect, 
 
     const baseY = groupRef.current.position.y;
     const headBone = boneNodes.head;
-    const swing = isLikelyMobile() ? 0.03 : 0.05;
 
     idleRef.current = gsap.timeline({ repeat: -1, yoyo: true, defaults: { ease: "sine.inOut" } });
     idleRef.current
       .to(groupRef.current.position, { y: baseY + 0.035, duration: 2.2 })
-      .to(groupRef.current.rotation, { y: swing, duration: 1.5 }, 0.2)
-      .to(groupRef.current.rotation, { y: -swing * 0.65, duration: 1.3 }, 1.95);
+      .to(groupRef.current.rotation, { y: 0.05, duration: 1.5 }, 0.2)
+      .to(groupRef.current.rotation, { y: -0.032, duration: 1.3 }, 1.95);
 
     if (headBone) {
       const originX = headBone.rotation.x;
@@ -275,7 +270,7 @@ function FullAvatar({ avatarUrl, currentMode, status, onHit, interactionEffect, 
   }
 
   return (
-    <group ref={groupRef} position={[0, -1.78, 0]} scale={1.82} onPointerDown={handlePointerDown}>
+    <group ref={groupRef} position={[0, -1.42, 0]} scale={1.24} onPointerDown={handlePointerDown}>
       <primitive object={scene} />
     </group>
   );
@@ -283,6 +278,13 @@ function FullAvatar({ avatarUrl, currentMode, status, onHit, interactionEffect, 
 
 function LiteAvatar({ currentMode, status, onHit, interactionEffect }) {
   const rootRef = useRef();
+  const headRef = useRef();
+  const bodyRef = useRef();
+  const leftHandRef = useRef();
+  const rightHandRef = useRef();
+  const faceTone = status === STATUS.ANGRY || status === STATUS.ANNOYED ? "#ff9b8c" : "#ffd7c2";
+  const eyeScale = status === STATUS.TIRED ? 0.62 : status === STATUS.SHY ? 0.52 : 1;
+  const blushOpacity = status === STATUS.SHY || status === STATUS.HAPPY ? 0.72 : 0.18;
 
   useEffect(() => {
     if (!interactionEffect || !rootRef.current) {
@@ -290,19 +292,34 @@ function LiteAvatar({ currentMode, status, onHit, interactionEffect }) {
     }
 
     const timeline = gsap.timeline();
-    timeline.to(rootRef.current.rotation, { z: interactionEffect.mode === MODE.CARE ? -0.04 : 0.05, duration: 0.16 }, 0);
+    timeline.to(rootRef.current.rotation, { z: interactionEffect.mode === MODE.CARE ? -0.035 : 0.05, duration: 0.16 }, 0);
     if (interactionEffect.areaId === "head") {
-      timeline.to(rootRef.current.rotation, { x: interactionEffect.mode === MODE.CARE ? 0.05 : -0.08, duration: 0.2 }, 0);
+      timeline.to(headRef.current.rotation, { x: interactionEffect.mode === MODE.CARE ? 0.22 : -0.2, z: interactionEffect.mode === MODE.CARE ? -0.05 : 0.08, duration: 0.2 }, 0);
     }
     if (interactionEffect.areaId === "face") {
-      timeline.to(rootRef.current.rotation, { y: interactionEffect.mode === MODE.CARE ? -0.12 : 0.12, duration: 0.22 }, 0);
+      timeline.to(headRef.current.rotation, { y: interactionEffect.mode === MODE.CARE ? -0.28 : 0.28, z: interactionEffect.mode === MODE.CARE ? -0.08 : 0.12, duration: 0.22 }, 0);
+    }
+    if (interactionEffect.areaId === "handLeft") {
+      timeline.to(leftHandRef.current.rotation, { z: interactionEffect.mode === MODE.CARE ? 0.2 : 1.1, duration: 0.2 }, 0);
+    }
+    if (interactionEffect.areaId === "handRight") {
+      timeline.to(rightHandRef.current.rotation, { z: interactionEffect.mode === MODE.CARE ? -0.2 : -1.1, duration: 0.2 }, 0);
+    }
+    if (interactionEffect.areaId === "shoulder") {
+      timeline.to(bodyRef.current.position, { y: interactionEffect.mode === MODE.CARE ? -0.08 : 0.05, duration: 0.2 }, 0);
     }
     if (interactionEffect.areaId === "body") {
-      timeline.to(rootRef.current.position, { z: interactionEffect.mode === MODE.CARE ? 0.02 : -0.08, duration: 0.2 }, 0);
+      timeline.to(bodyRef.current.rotation, { x: interactionEffect.mode === MODE.CARE ? 0.08 : -0.24, z: interactionEffect.mode === MODE.CARE ? 0 : 0.12, duration: 0.2 }, 0);
+      timeline.to(rootRef.current.position, { z: interactionEffect.mode === MODE.CARE ? 0.02 : -0.14, duration: 0.2 }, 0);
     }
     if (interactionEffect.areaId === "leg") {
-      timeline.to(rootRef.current.position, { x: interactionEffect.mode === MODE.CARE ? 0.05 : -0.08, duration: 0.18 }, 0);
+      timeline.to(rootRef.current.position, { x: interactionEffect.mode === MODE.CARE ? 0.06 : -0.16, duration: 0.18 }, 0);
     }
+    timeline.to(headRef.current.rotation, { x: 0, y: 0, z: 0, duration: 0.32 }, 0.86);
+    timeline.to(bodyRef.current.rotation, { x: 0, y: 0, z: 0, duration: 0.32 }, 0.86);
+    timeline.to(bodyRef.current.position, { y: 0, duration: 0.3 }, 0.86);
+    timeline.to(leftHandRef.current.rotation, { z: 0.46, duration: 0.3 }, 0.86);
+    timeline.to(rightHandRef.current.rotation, { z: -0.46, duration: 0.3 }, 0.86);
     timeline.to(rootRef.current.rotation, { x: 0, y: 0, z: 0, duration: 0.3 }, 0.85);
     timeline.to(rootRef.current.position, { x: 0, z: 0, duration: 0.22 }, 0.88);
     return () => timeline.kill();
@@ -316,42 +333,72 @@ function LiteAvatar({ currentMode, status, onHit, interactionEffect }) {
   });
 
   return (
-    <group ref={rootRef} position={[0, -1.15, 0]}>
-      <mesh position={[0, 2.05, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("head"); }}>
-        <sphereGeometry args={[0.34, 24, 24]} />
-        <meshStandardMaterial color={status === STATUS.ANGRY || status === STATUS.ANNOYED ? "#ff9685" : "#ffd2bf"} />
+    <group ref={rootRef} position={[0, -1.32, 0]} scale={0.92}>
+      <group ref={bodyRef}>
+        <mesh position={[0, 1.08, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("body"); }}>
+          <capsuleGeometry args={[0.42, 0.92, 10, 24]} />
+          <meshStandardMaterial color="#7fb6ff" roughness={0.82} />
+        </mesh>
+        <mesh position={[0, 1.51, 0.03]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("shoulder"); }}>
+          <capsuleGeometry args={[0.16, 0.9, 8, 18]} />
+          <meshStandardMaterial color="#8fc2ff" roughness={0.72} />
+        </mesh>
+      </group>
+
+      <group ref={headRef} position={[0, 2.03, 0]}>
+        <mesh castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("head"); }}>
+          <sphereGeometry args={[0.43, 36, 28]} />
+          <meshStandardMaterial color={faceTone} roughness={0.7} />
+        </mesh>
+        <mesh position={[0, 0.12, 0.03]} scale={[1.02, 0.62, 0.88]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("head"); }}>
+          <sphereGeometry args={[0.44, 36, 18]} />
+          <meshStandardMaterial color="#241816" roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.03, 0.385]} onPointerDown={(event) => { event.stopPropagation(); onHit("face"); }}>
+          <planeGeometry args={[0.56, 0.38]} />
+          <meshBasicMaterial color={currentMode === MODE.CARE ? "#ff9fba" : "#ff705f"} transparent opacity={0.13} />
+        </mesh>
+        <mesh position={[-0.15, -0.03, 0.414]} scale={[1, eyeScale, 1]}>
+          <capsuleGeometry args={[0.025, 0.09, 4, 8]} />
+          <meshBasicMaterial color="#2f201a" />
+        </mesh>
+        <mesh position={[0.15, -0.03, 0.414]} scale={[1, eyeScale, 1]}>
+          <capsuleGeometry args={[0.025, 0.09, 4, 8]} />
+          <meshBasicMaterial color="#2f201a" />
+        </mesh>
+        <mesh position={[-0.23, -0.14, 0.418]}>
+          <circleGeometry args={[0.075, 18]} />
+          <meshBasicMaterial color="#ff7fa2" transparent opacity={blushOpacity} />
+        </mesh>
+        <mesh position={[0.23, -0.14, 0.418]}>
+          <circleGeometry args={[0.075, 18]} />
+          <meshBasicMaterial color="#ff7fa2" transparent opacity={blushOpacity} />
+        </mesh>
+        <mesh position={[0, -0.27, 0.422]} scale={[status === STATUS.ANGRY || status === STATUS.ANNOYED ? 0.72 : 1, 1, 1]}>
+          <boxGeometry args={[0.15, 0.018, 0.01]} />
+          <meshBasicMaterial color="#7a3b31" />
+        </mesh>
+      </group>
+
+      <group ref={leftHandRef} position={[-0.62, 1.24, 0]} rotation={[0, 0, 0.46]}>
+        <mesh castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("handLeft"); }}>
+          <capsuleGeometry args={[0.13, 0.72, 8, 18]} />
+          <meshStandardMaterial color="#ffd7c2" roughness={0.72} />
+        </mesh>
+      </group>
+      <group ref={rightHandRef} position={[0.62, 1.24, 0]} rotation={[0, 0, -0.46]}>
+        <mesh castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("handRight"); }}>
+          <capsuleGeometry args={[0.13, 0.72, 8, 18]} />
+          <meshStandardMaterial color="#ffd7c2" roughness={0.72} />
+        </mesh>
+      </group>
+      <mesh position={[-0.22, 0.23, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("leg"); }}>
+        <capsuleGeometry args={[0.15, 0.82, 8, 18]} />
+        <meshStandardMaterial color="#52627d" roughness={0.8} />
       </mesh>
-      <mesh position={[0, 1.83, 0.3]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("face"); }}>
-        <planeGeometry args={[0.42, 0.26]} />
-        <meshBasicMaterial color={currentMode === MODE.CARE ? "#ff93b2" : "#ff6f5c"} transparent opacity={0.24} />
-      </mesh>
-      <mesh position={[0, 1.08, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("body"); }}>
-        <capsuleGeometry args={[0.34, 0.9, 8, 18]} />
-        <meshStandardMaterial color="#7db3ff" />
-      </mesh>
-      <mesh position={[-0.74, 1.15, 0]} rotation={[0, 0, 0.42]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("handLeft"); }}>
-        <capsuleGeometry args={[0.12, 0.74, 6, 16]} />
-        <meshStandardMaterial color="#ffd2bf" />
-      </mesh>
-      <mesh position={[0.74, 1.15, 0]} rotation={[0, 0, -0.42]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("handRight"); }}>
-        <capsuleGeometry args={[0.12, 0.74, 6, 16]} />
-        <meshStandardMaterial color="#ffd2bf" />
-      </mesh>
-      <mesh position={[-0.38, 1.34, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("shoulder"); }}>
-        <sphereGeometry args={[0.16, 16, 16]} />
-        <meshStandardMaterial color="#a9c8ff" />
-      </mesh>
-      <mesh position={[0.38, 1.34, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("shoulder"); }}>
-        <sphereGeometry args={[0.16, 16, 16]} />
-        <meshStandardMaterial color="#a9c8ff" />
-      </mesh>
-      <mesh position={[-0.2, 0.06, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("leg"); }}>
-        <capsuleGeometry args={[0.14, 0.86, 6, 16]} />
-        <meshStandardMaterial color="#525c7a" />
-      </mesh>
-      <mesh position={[0.2, 0.06, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("leg"); }}>
-        <capsuleGeometry args={[0.14, 0.86, 6, 16]} />
-        <meshStandardMaterial color="#525c7a" />
+      <mesh position={[0.22, 0.23, 0]} castShadow onPointerDown={(event) => { event.stopPropagation(); onHit("leg"); }}>
+        <capsuleGeometry args={[0.15, 0.82, 8, 18]} />
+        <meshStandardMaterial color="#52627d" roughness={0.8} />
       </mesh>
     </group>
   );
@@ -363,17 +410,17 @@ function FloatingEffect({ interactionEffect }) {
   }
 
   const map = {
-    head: interactionEffect.mode === MODE.CARE ? "♡" : "✦",
-    face: interactionEffect.mode === MODE.CARE ? "✿" : "…",
-    body: interactionEffect.mode === MODE.CARE ? "!" : "⚡",
-    shoulder: interactionEffect.mode === MODE.CARE ? "☁" : "!",
-    handLeft: interactionEffect.mode === MODE.CARE ? "↖" : "✋",
-    handRight: interactionEffect.mode === MODE.CARE ? "↗" : "✋",
-    leg: interactionEffect.mode === MODE.CARE ? "…" : "⇢"
+    head: interactionEffect.mode === MODE.CARE ? "心软" : "咚!",
+    face: interactionEffect.mode === MODE.CARE ? "脸红" : "啪!",
+    body: interactionEffect.mode === MODE.CARE ? "退!" : "轰!",
+    shoulder: interactionEffect.mode === MODE.CARE ? "呼" : "累",
+    handLeft: interactionEffect.mode === MODE.CARE ? "牵" : "甩!",
+    handRight: interactionEffect.mode === MODE.CARE ? "牵" : "挡!",
+    leg: interactionEffect.mode === MODE.CARE ? "躲" : "跑!"
   };
 
   return (
-    <Html center position={[0, 1.95, 0]} zIndexRange={[20, 0]}>
+    <Html center position={[0, 2.18, 0]} zIndexRange={[20, 0]}>
       <div className={`effect-badge effect-${interactionEffect.areaId} fx-${interactionEffect.fxLevel}`}>
         {map[interactionEffect.areaId] || "!"}
       </div>
@@ -387,12 +434,12 @@ function SceneRig({ avatarUrl, currentMode, status, renderMode, onHit, interacti
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 1.6, 4.35]} fov={36} />
+      <PerspectiveCamera makeDefault position={[0, 1.45, mobileLite ? 5.25 : 4.95]} fov={mobileLite ? 34 : 32} />
       <color attach="background" args={["#fff4e7"]} />
-      <ambientLight intensity={mobileLite ? 1.7 : 1.45} />
+      <ambientLight intensity={mobileLite ? 1.85 : 1.45} />
       <directionalLight
         position={[2.4, 4.2, 3]}
-        intensity={mobileLite ? 1.45 : 1.95}
+        intensity={mobileLite ? 1.55 : 1.95}
         castShadow={useShadow}
         shadow-mapSize-width={useShadow ? 1024 : 256}
         shadow-mapSize-height={useShadow ? 1024 : 256}
@@ -402,14 +449,18 @@ function SceneRig({ avatarUrl, currentMode, status, renderMode, onHit, interacti
         <circleGeometry args={[3.2, 42]} />
         <shadowMaterial transparent opacity={useShadow ? 0.22 : 0.1} />
       </mesh>
-      <FullAvatar
-        avatarUrl={avatarUrl}
-        currentMode={currentMode}
-        status={status}
-        onHit={onHit}
-        interactionEffect={interactionEffect}
-        onRenderStateChange={onRenderStateChange}
-      />
+      {mobileLite ? (
+        <LiteAvatar currentMode={currentMode} onHit={onHit} status={status} interactionEffect={interactionEffect} />
+      ) : (
+        <FullAvatar
+          avatarUrl={avatarUrl}
+          currentMode={currentMode}
+          status={status}
+          onHit={onHit}
+          interactionEffect={interactionEffect}
+          onRenderStateChange={onRenderStateChange}
+        />
+      )}
       <FloatingEffect interactionEffect={interactionEffect} />
     </>
   );
@@ -460,7 +511,7 @@ export default function CharacterScene({
       onRenderStateChange({
         renderMode: RENDER_MODE.FALLBACK_2D,
         loadState: LOAD_STATE.FALLBACK,
-        fallbackReason: "当前设备的 WebGL 初始化失败，已切换到轻量互动模式。"
+        fallbackReason: "当前设备 WebGL 初始化失败，已切换到轻量互动模式。"
       });
       return;
     }
@@ -469,6 +520,7 @@ export default function CharacterScene({
       setResolvedMode(RENDER_MODE.LITE_3D);
       onRenderStateChange({
         renderMode: RENDER_MODE.LITE_3D,
+        loadState: LOAD_STATE.READY,
         fallbackReason: ""
       });
       return;
@@ -494,7 +546,7 @@ export default function CharacterScene({
   return (
     <Canvas
       shadows={resolvedMode === RENDER_MODE.FULL_3D}
-      dpr={resolvedMode === RENDER_MODE.FULL_3D ? [1, 1.6] : [1, 1.15]}
+      dpr={resolvedMode === RENDER_MODE.FULL_3D ? [1, 1.6] : [1, 1.1]}
       gl={{ antialias: resolvedMode === RENDER_MODE.FULL_3D, alpha: true, powerPreference: "high-performance" }}
     >
       <SceneRig
